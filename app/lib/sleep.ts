@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { User } from "@/lib/generated/prisma";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
+import { error } from "console";
 
 
 type HonoEnv = {
@@ -24,10 +27,39 @@ sleepRouter.use("*", async (c, next) => {
   await next()
 });
 
-sleepRouter.post("/", async (c) => {
-  console.log(c);
-  console.log(c.get("CurrentUser"));
-  return c.json({"message": "Sleep entry created successfully", user: c.get("CurrentUser") }, 200);
+const sleepRouterReceivingJson = z.object({
+  userId: z.string().uuid(),
+  bedtime: z.string().datetime(),
+  wakeUpTime: z.string().datetime(),
+  qualityRating: z.number().int().min(1).max(10),
+  comments: z.string().optional(),
+  durationHours: z.number().optional(),
+
+});
+
+sleepRouter.post("/", zValidator('json', sleepRouterReceivingJson), async (c) => { //first successfull post to the db
+  const CurrentUserID = c.get("CurrentUser").id
+  const bodyReceived = await c.req.json(); //parsing it to json
+
+  //check the currentuser with the authenticated user
+  const {bedtime, wakeUpTime, durationHours, qualityRating,comments} = bodyReceived
+  const sleepEntry = await db.sleepEntry.create({
+    data : {
+      userId: CurrentUserID,
+      bedtime: new Date(bedtime),
+      wakeUpTime: new Date(wakeUpTime),
+      durationHours: durationHours,
+      qualityRating: qualityRating,
+      comments: comments
+
+    }
+  }).then((data) => {
+    return c.json({message: "successfully added to the database",}, 200)
+  }).catch((error) => {
+    return c.json({Error: `${error.message ||  "UnknownError"} `})
+  })
+
+  return c.json(200);
 });
 
 export default sleepRouter;
