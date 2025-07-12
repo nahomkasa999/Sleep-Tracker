@@ -11,7 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:4x9cP6yBFnK5Gtom@db.cevsovddhtbmfetisski.supabase.co:5432/postgres"
+  url      = "postgresql://neondb_owner:npg_A1c0shMYglRk@ep-green-mud-adle73ln-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 model User {
@@ -43,7 +43,7 @@ model WellbeingEntry {
   id          String    @id @default(uuid())
   userId      String
   user        User      @relation(fields: [userId], references: [id])
-  entryDate   DateTime  @unique // Ensure only one entry per day per user
+  entryDate   DateTime  @unique 
   dayRating   Int       @map("day_rating") @default(5) @db.SmallInt // 1-10
   mood        Mood? // e.g., 'Happy', 'Stressed', 'Neutral'
   comments    String?
