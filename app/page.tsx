@@ -17,36 +17,29 @@ type typeOfDB = {
 function Page() {
   const [sleepingtime, setSleepTime] = useState('')
   const [wakingtime, setWakeTime] = useState('')
-
-   const temporaryDatabase: typeOfDB = {
+  const [temporaryDatabase, setTemporaryDatabase] = useState<typeOfDB>({
     sleepingtime: [
-      [22, 30], // Day 1: 10:30 PM
-      [23, 0],  // Day 2: 11:00 PM
-      [22, 45], // Day 3: 10:45 PM
-      [23, 15], // Day 4: 11:15 PM
-      [22, 0]   // Day 5: 10:00 PM
+      [22, 30],
+      [23, 0],
+      [22, 45],
+      [23, 15],
+      [22, 0]
     ],
     wakingtime: [
-      [6, 45],  // Day 1: 6:45 AM
-      [7, 0],   // Day 2: 7:00 AM
-      [6, 30],  // Day 3: 6:30 AM
-      [7, 15],  // Day 4: 7:15 AM
-      [6, 0]    // Day 5: 6:00 AM
+      [6, 45],
+      [7, 0],
+      [6, 30],
+      [7, 15],
+      [6, 0]
     ],
     sleepDuration: [
-      [8, 15],  // Day 1: 8 hours 15 minutes
-      [8, 0],   // Day 2: 8 hours 0 minutes
-      [7, 45],  // Day 3: 7 hours 45 minutes
-      [8, 0],   // Day 4: 8 hours 0 minutes
-      [8, 0]    // Day 5: 8 hours 0 minutes
+      [8, 15],
+      [8, 0],
+      [7, 45],
+      [8, 0],
+      [8, 0]
     ],
-    feedback: [
-      8,        // Day 1 feedback
-      7,        // Day 2 feedback
-      9,        // Day 3 feedback
-      6,        // Day 4 feedback
-      8         // Day 5 feedback
-    ],
+    feedback: [8, 7, 9, 6, 8],
     comments: [
       "Felt refreshed today.",
       "A bit restless in the middle of the night.",
@@ -54,7 +47,7 @@ function Page() {
       "Hard to fall asleep, felt groggy.",
       "Solid sleep, good energy."
     ]
-  }
+  });
 
   const handleButtonClick = () => {
     if (!sleepingtime || !wakingtime) {
@@ -62,29 +55,22 @@ function Page() {
       return
     }
 
-    const sleepTimeParts = sleepingtime.split(':').map(Number) 
+    const sleepTimeParts = sleepingtime.split(':').map(Number)
     const wakeTimeParts = wakingtime.split(':').map(Number)
-  
-    temporaryDatabase.sleepingtime.push(sleepTimeParts)
-    temporaryDatabase.wakingtime.push(wakeTimeParts)
 
     const sleepDate = new Date()
-    sleepDate.setHours(sleepTimeParts[0], sleepTimeParts[1], 0) // Sets time for today
+    sleepDate.setHours(sleepTimeParts[0], sleepTimeParts[1], 0)
 
     const wakeDate = new Date()
-    wakeDate.setHours(wakeTimeParts[0], wakeTimeParts[1], 0)   // Sets time for today
+    wakeDate.setHours(wakeTimeParts[0], wakeTimeParts[1], 0)
 
     if (wakeDate < sleepDate) {
-     
-      wakeDate.setDate(wakeDate.getDate() + 1) 
+      wakeDate.setDate(wakeDate.getDate() + 1)
     }
 
-    const sleepTimeInHours = (wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60 * 60) 
+    const sleepTimeInHours = (wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60 * 60)
     const Hour = Math.floor(sleepTimeInHours)
     const Minutes = Math.floor((sleepTimeInHours - Hour) * 60)
-
-   
-    temporaryDatabase.sleepDuration.push([Hour, Minutes])
 
     let sleepDurationMessage: string;
     if (Hour > 0 && Minutes === 0) {
@@ -94,6 +80,14 @@ function Page() {
     }
     alert(`You slept for ${sleepDurationMessage}.`);
 
+    // Update state with new values
+    setTemporaryDatabase(prev => ({
+      ...prev,
+      sleepingtime: [...prev.sleepingtime, sleepTimeParts],
+      wakingtime: [...prev.wakingtime, wakeTimeParts],
+      sleepDuration: [...prev.sleepDuration, [Hour, Minutes]]
+    }));
+
     getSleepingFeedback();
   }
 
@@ -101,26 +95,28 @@ function Page() {
     let persons_feedback_input = prompt("Please provide your feedback on your sleep quality (1-10):");
     let persons_feedback: number;
 
-    
     if (persons_feedback_input === null || isNaN(Number(persons_feedback_input)) || Number(persons_feedback_input) < 1 || Number(persons_feedback_input) > 10) {
       alert("Invalid or missing feedback. Please provide a rating between 1 and 10.");
-      
-      return; 
+      return;
     }
     persons_feedback = Number(persons_feedback_input);
-    temporaryDatabase.feedback.push(persons_feedback);
 
     const confirmComment = confirm("Do you want to provide any additional comments: yes or no");
-    let additionalComment: string | null = null; 
+    let additionalComment: string | null = null;
     if (confirmComment) {
       additionalComment = prompt("Please provide your additional comments:");
-      
-      temporaryDatabase.comments.push(additionalComment || "No additional comment provided");
       alert(`Thank you for your feedback! You rated your sleep quality as ${persons_feedback} and provided the comment: ${additionalComment || "No additional comment provided"}`);
     } else {
-      temporaryDatabase.comments.push("No additional comment provided")      
+      additionalComment = "No additional comment provided";
       alert(`Thank you for your feedback! You rated your sleep quality as ${persons_feedback}`);
     }
+
+    // Update state with new feedback and comment
+    setTemporaryDatabase(prev => ({
+      ...prev,
+      feedback: [...prev.feedback, persons_feedback],
+      comments: [...prev.comments, additionalComment || "No additional comment provided"]
+    }));
     console.log("Temporary Database:", temporaryDatabase);
   }
 
