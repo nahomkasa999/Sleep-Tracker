@@ -26,6 +26,7 @@ function checkError(error: unknown): StructuredError {
       errorType: 'PrismaError',
     };
   }
+  
   return {
     statusCode: 500,
     message: `An unexpected error occurred: ${

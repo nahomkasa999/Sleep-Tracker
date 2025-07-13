@@ -58,7 +58,7 @@ type validparametertype = z.infer<typeof valideParameter>;
 
 type singleWellBeingReceingSchemaDB = z.infer<typeof wellBeingAcceptingThings>;
 
-//----------------for post("/") - DEDICATED SCHEMA FOR FRONTEND INPUT -----------------//
+//----------------for post("/") - for the commign schema from frontend -----------------//
 const wellBeingInputSchema = z.object({
   entryDate: z.string().datetime(),
   dayRating: z.number().int().min(1).max(10),
@@ -68,6 +68,15 @@ const wellBeingInputSchema = z.object({
 
 type TypeOfDataFromFrontEnd = z.infer<typeof wellBeingInputSchema>;
 
+//---------------for put(/:id) --------------------------------------//
+const wellBeingInputSchemaforPut = z.object({
+  entryDate: z.string().datetime().optional(),
+  dayRating: z.number().int().min(1).max(10).optional(),
+  mood: z.nativeEnum(Mood).nullable().optional(), 
+  comments: z.string().nullable().optional(),
+});
+
+type wellbeingPutType = z.infer<typeof wellBeingInputSchemaforPut>
 
 wellBeingRouter.get("/", async (c) => {
   const CurrentUserID = c.get("CurrentUser").id;
@@ -86,28 +95,7 @@ wellBeingRouter.get("/", async (c) => {
       200
     );
   } catch (error) {
-    console.error("Error fetching wellbeing data:", error);
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error:
-            "Data integrity error: Retrieved wellbeing data does not match schema",
-          details: error.errors,
-        },
-        500
-      );
-    }
-    if (error instanceof PrismaClientKnownRequestError) {
-      return c.json({ error: `Database error: ${error.message}` }, 500);
-    }
-    return c.json(
-      {
-        error: `An unexpected error occurred: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      },
-      500
-    );
+  return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
   }
 });
 
@@ -117,20 +105,7 @@ wellBeingRouter.get("/:id", async (c) => {
   try {
     validatedId = valideParameter.parse(c.req.param("id"));
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error: "Invalid ID format", 
-          details: error.errors,
-        },
-        400 
-      );
-    }
-    console.error("Unexpected error during ID parsing:", error);
-    return c.json(
-      { error: `An unexpected error occurred during ID validation: ${error instanceof Error ? error.message : "Unknown error"}` },
-      500
-    );
+    return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
   }
 
   try {
@@ -152,27 +127,7 @@ wellBeingRouter.get("/:id", async (c) => {
     }, 200); // Added 200 status code
 
   } catch (error) {
-    console.error("Error getting user wellbeing entry:", error);
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error: "Data integrity error: Retrieved wellbeing data does not match schema",
-          details: error.errors,
-        },
-        500
-      );
-    }
-    if (error instanceof PrismaClientKnownRequestError) {
-      return c.json({ error: `Database error: ${error.message}` }, 500);
-    }
-    return c.json(
-      {
-        error: `An unexpected error occurred: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      },
-      500
-    );
+     return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
   }
 });
 
@@ -201,7 +156,57 @@ wellBeingRouter.post("/", zValidator("json", wellBeingInputSchema), async(c) => 
     }
 });
 
+wellBeingRouter.put("/:id", zValidator("json", wellBeingInputSchemaforPut), async(c) => {
+    let validatedId: validparametertype 
+    try {
+       validatedId = valideParameter.parse(c.req.param("id"))
+    
+    } catch (error) {
+        return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+
+    try {
+
+        const validatedBody: wellbeingPutType = wellBeingInputSchemaforPut.parse(c.req.valid("json"))
+        const updateWellbeingData = await db.wellbeingEntry.update({
+            where:{
+                id: validatedId,
+            },
+            data: {
+                ...validatedBody
+            }
+        })
+
+        return c.json({message: "successfully updated"}, 200)
+    } catch (error) {
+        return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+})
+
+wellBeingRouter.delete("/:id", async(c) => {
+        let validatedId: validparametertype 
+    try {
+       validatedId = valideParameter.parse(c.req.param("id"))
+    
+    } catch (error) {
+        return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+    try {
+        const deletingItem =  await db.wellbeingEntry.delete({
+            where:{
+                id: validatedId,
+            }
+        })
+
+        return c.json({message: "successfully deleted"}, 200)
+    } catch (error) {
+         return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+})
+
 export default wellBeingRouter;
 
 
 //----------I am making commit incase applying the utility error checking method resulted bugs ---------------//
+//This felt like breeze just, 
+    //ya, shut the fuck up you are just making a simple crud their is nothing to be happy about it.
