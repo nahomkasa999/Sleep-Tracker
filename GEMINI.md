@@ -102,3 +102,43 @@ These routes provide processed or aggregated data, specifically for charts and c
     * **Authentication:** Requires authentication.
 
 This comprehensive list covers all the API interactions needed to support the full functionality of your sleep tracker application.
+
+
+
+
+so far this is what I have understood
+
+
+1) when declearing a variable we have to make a type of it
+
+     const name: string = "somthing" or const age: number =  "age", const bul: bool = True...
+
+2) when determining a function we have to be specific what is enternign and output
+
+   function (inter1: string, inter2: bool): number {}
+
+3) but the problem comes is that the variables or functions are not always single valued, like they could be json fromat or they could an object.
+    in this case its hard to make to certainly define the type of the variable or the input of the function and the out put.
+        e.g name = { name1: "nahom", name2 : sena.....}, but the same name can be another thing {somthing: "ohter" ...}
+        so we should make the objects to have a certain type of structured and remove the ambiguity
+        therefore we make them strickt statement about them like 
+         the object should have these kind of keys and those keys are type of this
+         so to do this we need interface.
+          interface nameobject {
+            name1: string;
+            name2: string:
+          }
+          now we have defined what the interface is or other term we have defined what the object must look like in this case. now we can tell it that the name
+          should be nameobject format
+          name: nameobject = {name1: "nahom", name2: "sena"} type safety applied
+
+          but sometimes we dont always expect string, or we might expect specific kind of strings e.g gender male, female
+
+          so to do this we have to create a personal made up type,
+          type gender = "male" | "female"  and now then add it to the interface
+           
+           interface nameobject {
+                gender: gender(this is the type so we expect gender to be either male or female)
+           }
+
+           
