@@ -3,7 +3,7 @@ import { User } from "@/lib/generated/prisma";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Param, PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 
 type HonoEnv = {
@@ -272,131 +272,42 @@ sleepRouter.put("/:id", zValidator('json', updateSpecificFieldSchema), async (c)
   }
 });
 
+//-------------------------------------made a commit for finishing the put-----------------------------------------
+
+sleepRouter.delete("/:id", async(c) => {
+  let validatedId: ParamsId
+
+  try {
+    validatedId = sleepRouterEnteryID.parse(c.req.param("id"));
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: "Invalid sleep entry ID format", details: error.errors }, 400);
+    }
+    return c.json({ error: "An unexpected error occurred while validating ID" }, 500);
+  }
+
+  try {
+    const deleteItem = await db.sleepEntry.delete({
+    where:{
+      id: validatedId
+    }
+  })
+  console.log(deleteItem)
+  return c.json({message: "successfully deleted item"})
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return c.json({ error: "Sleep entry not found or you don't have permission to update it." }, 404);
+      }
+      return c.json({ error: `Database error during update: ${error.message}` }, 500);
+    }
+  return c.json({message: "internal error", error: `An expected Error occured  ${error instanceof Error ? error.message : "Unknown error"}`}, 500) 
+  }
+
+  
+
+
+})
 
 
 export default sleepRouter;
-
-// import { Hono } from 'hono';
-// import { PrismaClient, User } from '@/lib/generated/prisma';
-// import { zValidator } from '@hono/zod-validator';
-// import { z } from 'zod';
-
-// const prisma = new PrismaClient();
-
-// type Variables = {
-//   user: User;
-// };
-
-// const sleepRouter = new Hono<{ Variables: Variables }>();
-
-// // Middleware to get user (replace with your actual auth logic)
-// sleepRouter.use('*', async (c, next) => {
-//   // In a real app, you'd get the user from a session or token
-//   // For now, we'll hardcode a user for demonstration purposes
-//   const user = await prisma.user.findFirst();
-//   if (!user) {
-//     return c.json({ error: 'No user found in the database. Please create a user first.' }, 404);
-//   }
-//   c.set('user', user);
-//   await next();
-// });
-
-// const sleepSchema = z.object({
-//   bedtime: z.string().datetime(),
-//   wakeUpTime: z.string().datetime(),
-//   qualityRating: z.number().int().min(1).max(10),
-//   comments: z.string().optional(),
-// });
-
-// // Create a sleep entry
-// sleepRouter.post('/', zValidator('json', sleepSchema), async (c) => {
-//   const user = c.get('user');
-//   const { bedtime, wakeUpTime, qualityRating, comments } = c.req.valid('json');
-
-//   const bedtimeDate = new Date(bedtime);
-//   const wakeUpTimeDate = new Date(wakeUpTime);
-//   const durationMs = wakeUpTimeDate.getTime() - bedtimeDate.getTime();
-//   const durationHours = durationMs / (1000 * 60 * 60);
-
-//   try {
-//     const newSleepEntry = await prisma.sleepEntry.create({
-//       data: {
-//         userId: user.id,
-//         bedtime: bedtimeDate,
-//         wakeUpTime: wakeUpTimeDate,
-//         durationHours,
-//         qualityRating,
-//         comments,
-//       },
-//     });
-//     return c.json(newSleepEntry, 201);
-//   } catch (error) {
-//     return c.json({ error: 'Failed to create sleep entry' }, 500);
-//   }
-// });
-
-// // Get all sleep entries for the user
-// sleepRouter.get('/', async (c) => {
-//   const user = c.get('user');
-//   try {
-//     const sleepEntries = await prisma.sleepEntry.findMany({
-//       where: { userId: user.id },
-//       orderBy: { bedtime: 'desc' },
-//     });
-//     return c.json(sleepEntries);
-//   } catch (error) {
-//     return c.json({ error: 'Failed to retrieve sleep entries' }, 500);
-//   }
-// });
-
-// // Get a single sleep entry
-// sleepRouter.get('/:id', async (c) => {
-//   const user = c.get('user');
-//   const { id } = c.req.param();
-//   try {
-//     const sleepEntry = await prisma.sleepEntry.findFirst({
-//       where: { id, userId: user.id },
-//     });
-//     if (!sleepEntry) {
-//       return c.json({ error: 'Sleep entry not found' }, 404);
-//     }
-//     return c.json(sleepEntry);
-//   } catch (error) {
-//     return c.json({ error: 'Failed to retrieve sleep entry' }, 500);
-//   }
-// });
-
-// const updateSleepSchema = sleepSchema.partial();
-
-// // Update a sleep entry
-// sleepRouter.put('/:id', zValidator('json', updateSleepSchema), async (c) => {
-//   const user = c.get('user');
-//   const { id } = c.req.param();
-//   const data = c.req.valid('json');
-
-//   try {
-//     const updatedSleepEntry = await prisma.sleepEntry.update({
-//       where: { id, userId: user.id },
-//       data,
-//     });
-//     return c.json(updatedSleepEntry);
-//   } catch (error) {
-//     return c.json({ error: 'Failed to update sleep entry' }, 500);
-//   }
-// });
-
-// // Delete a sleep entry
-// sleepRouter.delete('/:id', async (c) => {
-//   const user = c.get('user');
-//   const { id } = c.req.param();
-//   try {
-//     await prisma.sleepEntry.delete({
-//       where: { id, userId: user.id },
-//     });
-//     return c.json({ message: 'Sleep entry deleted successfully' });
-//   } catch (error) {
-//     return c.json({ error: 'Failed to delete sleep entry' }, 500);
-//   }
-// });
-
-// export default sleepRouter;
