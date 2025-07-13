@@ -3,7 +3,8 @@ import { handle } from 'hono/vercel'
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 
-import sleepRouter from '../../lib/sleep';
+import sleepRouter from '@/app/lib/wellbeing';
+import wellBeingRouter from '@/app/lib/wellbeing';
 
 const app = new Hono().basePath('/api')
 app.use('*', logger());
@@ -12,7 +13,7 @@ app.use('*', cors());
 
 //app.route('/auth', authRouter);
 app.route('/sleep', sleepRouter);
-// app.route('/wellbeing', wellbeingRouter);
+app.route('/wellbeing', wellBeingRouter);
 // app.route('/insights', insightsRouter);
 
 export const GET = handle(app)
