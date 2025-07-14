@@ -296,6 +296,56 @@ const apiDefinition = {
                 "500": { "$ref": "#/components/responses/ServerError" }
             }
         }
+    },
+    "/insights/summary": {
+      "get": {
+        summary: "Provides a summary of the user's sleep patterns and well-being over a period.",
+        parameters: [
+          {
+            name: "period",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: ["week", "month", "all"]
+            },
+            description: "Optional period for the summary (e.g., 'week', 'month', 'all')."
+          },
+          {
+            name: "startDate",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              format: "date-time"
+            },
+            description: "Optional start date for the summary (ISO 8601 format). Must be used with endDate."
+          },
+          {
+            name: "endDate",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              format: "date-time"
+            },
+            description: "Optional end date for the summary (ISO 8601 format). Must be used with startDate."
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Successfully fetched summary data",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/SummaryResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
     }
   },
   components: {
@@ -374,6 +424,45 @@ const apiDefinition = {
             comments: { type: "string", nullable: true, description: "Optional new comments." },
             durationHours: { type: "number", format: "float", nullable: true, description: "Optional new duration in hours." }
         }
+      },
+      "SummaryResponse": {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          summary: {
+            type: "object",
+            properties: {
+              averageSleepDurationHours: { type: "number", format: "float", nullable: true, description: "Average sleep duration in hours." },
+              bestSleepDays: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    date: { type: "string", format: "date", description: "Date of the best sleep day (YYYY-MM-DD)." },
+                    qualityRating: { type: "integer", description: "Quality rating for that day." }
+                  },
+                  required: ["date", "qualityRating"]
+                },
+                description: "List of days with the best sleep quality."
+              },
+              worstSleepDays: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    date: { type: "string", format: "date", description: "Date of the worst sleep day (YYYY-MM-DD)." },
+                    qualityRating: { type: "integer", description: "Quality rating for that day." }
+                  },
+                  required: ["date", "qualityRating"]
+                },
+                description: "List of days with the worst sleep quality."
+              },
+              averageWellbeingRating: { type: "number", format: "float", nullable: true, description: "Average well-being rating." }
+            },
+            required: ["averageSleepDurationHours", "bestSleepDays", "worstSleepDays", "averageWellbeingRating"]
+          }
+        },
+        required: ["message", "summary"]
       },
       "ErrorResponse": {
         type: "object",

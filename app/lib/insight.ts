@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { User } from "@/lib/generated/prisma";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import {checkError, FindCorrelationFactor } from "./utllity";
-import { ContentfulStatusCode } from "hono/utils/http-status"; //this is interesting
-import { error } from "console";
+import { checkError, FindCorrelationFactor } from "./utllity";
+import { ContentfulStatusCode } from "hono/utils/http-status";
+import { createRoute } from '@hono/zod-openapi';
+import { subDays, startOfDay } from 'date-fns'; // Import date utility functions
 
 type HonoEnv = {
   Variables: {
@@ -38,10 +37,10 @@ const SleepEntryReceivingSchemaDB = z.object({
 })
 
 const WellbeingEntryReceivingSchemaDB = z.object({
-     entryDate: z.date(), 
+     entryDate: z.date(),
      dayRating: z.number().min(1).max(10).int(),
      createdAt: z.date(),
-     
+
 })
 
 const SleepEntryReceivingSchemaDBArray = z.array(SleepEntryReceivingSchemaDB)
@@ -49,7 +48,6 @@ const WellbeingEntryReceivingSchemaDBArray = z.array(WellbeingEntryReceivingSche
 
 type SleepEntryReceivingSchemaDBType = z.infer<typeof SleepEntryReceivingSchemaDBArray>
 type WellbeingEntryReceivingSchemaDBType = z.infer<typeof WellbeingEntryReceivingSchemaDBArray>
-
 
 
 insightsRouter.get("/correlation", async(c) => {
@@ -74,7 +72,7 @@ insightsRouter.get("/correlation", async(c) => {
             where: { userId: CurrentUserID },
             orderBy: { entryDate: 'asc' },
             select: {
-                entryDate: true, 
+                entryDate: true,
                 dayRating: true,
                 createdAt: true,
                 id: false,
@@ -84,15 +82,185 @@ insightsRouter.get("/correlation", async(c) => {
         const validatedWellbeingEntriesBody: WellbeingEntryReceivingSchemaDBType = WellbeingEntryReceivingSchemaDBArray.parse(wellbeingEntries)
 
         const response = FindCorrelationFactor(validatedSleepEntriesBody, validatedWellbeingEntriesBody)
-        
+
         return c.json({message:"success", response}, 200)
     } catch (error){
 
         return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
     }
- 
+
 })
 
+//------------Schema for Summary Query Parameters----------//
+const SummaryQueryParamsSchema = z.object({
+    period: z.enum(['week', 'month', 'all']).optional(), 
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),  
+}).refine(data => {
+    
+    if ((data.startDate && !data.endDate) || (!data.startDate && data.endDate)) {
+        return false;
+    }
+
+    if (data.startDate && data.endDate) {
+        return new Date(data.startDate) <= new Date(data.endDate);
+    }
+    return true;
+}, {
+    message: "Both startDate and endDate must be provided if either is used, and startDate must be before or equal to endDate.",
+    path: ["startDate", "endDate"],
+});
+
+//------------Schema for Summary Response----------//
+const SummaryResponseSchema = z.object({
+    averageSleepDurationHours: z.number().nullable(),
+    bestSleepDays: z.array(z.object({ 
+        date: z.string(),
+        qualityRating: z.number()
+    })),
+    worstSleepDays: z.array(z.object({ 
+        date: z.string(),
+        qualityRating: z.number()
+    })),
+    averageWellbeingRating: z.number().nullable(),
+});
+
+//------------GET /insights/summary Route----------//
+insightsRouter.get("/summary", async(c) => {
+    try {
+        const CurrentUserID = c.get("CurrentUser").id;
+        const queryParams = c.req.query();
+
+       
+        const validatedQueryParams = SummaryQueryParamsSchema.safeParse(queryParams);
+
+        if (!validatedQueryParams.success) {
+            return c.json({ error: validatedQueryParams.error.errors }, 400);
+        }
+
+        const { period, startDate, endDate } = validatedQueryParams.data;
+
+        let filterStartDate: Date | undefined;
+        let filterEndDate: Date | undefined;
+
+        if (period) {
+            const now = new Date();
+            if (period === 'week') {
+                filterStartDate = startOfDay(subDays(now, 7)); 
+            } else if (period === 'month') {
+                filterStartDate = startOfDay(subDays(now, 30)); 
+            }
+            filterEndDate = now;
+        } else if (startDate && endDate) {
+            filterStartDate = new Date(startDate);
+            filterEndDate = new Date(endDate);
+        }
+
+        const sleepEntriesQuery: any = {
+            where: { userId: CurrentUserID },
+            select: {
+                bedtime: true,
+                wakeUpTime: true,
+                qualityRating: true,
+                createdAt: true,
+            }
+        };
+        if (filterStartDate && filterEndDate) {
+            sleepEntriesQuery.where.createdAt = {
+                gte: filterStartDate,
+                lte: filterEndDate,
+            };
+        }
+        const sleepEntries = await db.sleepEntry.findMany(sleepEntriesQuery);
+        const validatedSleepEntries: SleepEntryReceivingSchemaDBType = SleepEntryReceivingSchemaDBArray.parse(sleepEntries);
+
+        const wellbeingEntriesQuery: any = {
+            where: { userId: CurrentUserID },
+            orderBy: { entryDate: 'asc' },
+            select: {
+                entryDate: true,
+                dayRating: true,
+                createdAt: true,
+            }
+        };
+        if (filterStartDate && filterEndDate) {
+            wellbeingEntriesQuery.where.entryDate = { // Filter by entryDate for wellbeing
+                gte: filterStartDate,
+                lte: filterEndDate,
+            };
+        }
+        const wellbeingEntries = await db.wellbeingEntry.findMany(wellbeingEntriesQuery);
+        const validatedWellbeingEntries: WellbeingEntryReceivingSchemaDBType = WellbeingEntryReceivingSchemaDBArray.parse(wellbeingEntries);
+
+        let totalSleepDurationMs = 0;
+        let bestSleepQuality = 0;
+        let worstSleepQuality = 11; 
+        const bestSleepDays: { date: string; qualityRating: number }[] = [];
+        const worstSleepDays: { date: string; qualityRating: number }[] = [];
+
+        if (validatedSleepEntries.length > 0) {
+            validatedSleepEntries.forEach(entry => {
+                const duration = entry.wakeUpTime.getTime() - entry.bedtime.getTime();
+                totalSleepDurationMs += duration;
+
+                
+                if (entry.qualityRating > bestSleepQuality) {
+                    bestSleepQuality = entry.qualityRating;
+                    bestSleepDays.splice(0, bestSleepDays.length);
+                    bestSleepDays.push({ date: entry.createdAt.toISOString().split('T')[0], qualityRating: entry.qualityRating });
+                } else if (entry.qualityRating === bestSleepQuality) {
+                    bestSleepDays.push({ date: entry.createdAt.toISOString().split('T')[0], qualityRating: entry.qualityRating });
+                }
+
+            
+                if (entry.qualityRating < worstSleepQuality) {
+                    worstSleepQuality = entry.qualityRating;
+                    worstSleepDays.splice(0, worstSleepDays.length); 
+                    worstSleepDays.push({ date: entry.createdAt.toISOString().split('T')[0], qualityRating: entry.qualityRating });
+                } else if (entry.qualityRating === worstSleepQuality) {
+                    worstSleepDays.push({ date: entry.createdAt.toISOString().split('T')[0], qualityRating: entry.qualityRating });
+                }
+            });
+        }
+
+        const averageSleepDurationHours = validatedSleepEntries.length > 0
+            ? (totalSleepDurationMs / validatedSleepEntries.length) / (1000 * 60 * 60)
+            : null;
+
+        let totalWellbeingRating = 0;
+        if (validatedWellbeingEntries.length > 0) {
+            validatedWellbeingEntries.forEach(entry => {
+                totalWellbeingRating += entry.dayRating;
+            });
+        }
+
+        const averageWellbeingRating = validatedWellbeingEntries.length > 0
+            ? totalWellbeingRating / validatedWellbeingEntries.length
+            : null;
+
+        const summaryResponse = {
+            averageSleepDurationHours: averageSleepDurationHours,
+            bestSleepDays: bestSleepDays,
+            worstSleepDays: worstSleepDays,
+            averageWellbeingRating: averageWellbeingRating,
+        };
 
 
-export default insightsRouter
+        const validatedSummaryResponse = SummaryResponseSchema.safeParse(summaryResponse);
+
+        if (!validatedSummaryResponse.success) {
+       
+            console.error("Internal data validation error for summary response:", validatedSummaryResponse.error);
+            return c.json({ error: "Failed to generate summary due to internal data inconsistency." }, 500);
+        }
+
+        return c.json({ message: "success", summary: validatedSummaryResponse.data }, 200);
+
+    } catch (error) {
+        return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+});
+
+
+
+export default insightsRouter;
