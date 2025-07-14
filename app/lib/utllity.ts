@@ -36,16 +36,11 @@ function checkError(error: unknown): StructuredError {
   };
 }
 
-
-
-// --- Zod Schemas for Correlation Response ---
-
 const correlationDataPointSchema = z.object({
   sleepDuration: z.number(),
   dayRating: z.number(),
   date: z.string(),
 });
-
 
 const correlationResponseSchema = z.object({
   correlationCoefficient: z.number(),
@@ -54,8 +49,6 @@ const correlationResponseSchema = z.object({
 
 type CorrelationResponse = z.infer<typeof correlationResponseSchema>;
 type CorrelationDataPoint = z.infer<typeof correlationDataPointSchema>;
-
-
 
 function calculatePearsonCorrelation(data: CorrelationDataPoint[]): { correlationCoefficient: number; dataPoints: CorrelationDataPoint[] } {
   const filteredData = data.filter(d =>
@@ -105,39 +98,33 @@ function calculatePearsonCorrelation(data: CorrelationDataPoint[]): { correlatio
   };
 }
 
-
-// --- FindCorrelationFactor Function Implementation ---
 function FindCorrelationFactor(
-    sleepEntries: any,
-    wellbeingEntries: any
+    sleepEntries: { bedtime: Date; wakeUpTime: Date; qualityRating: number; createdAt: Date; }[],
+    wellbeingEntries: { entryDate: Date; dayRating: number; createdAt: Date; }[]
 ): CorrelationResponse {
     const dailyData = new Map<string, { sleepDuration?: number; dayRating?: number }>();
 
-   
-    sleepEntries.forEach((entry: { bedtime: any; wakeUpTime: any; }) => {
+    sleepEntries.forEach((entry) => {
         const bedtime = entry.bedtime;
         const wakeUpTime = entry.wakeUpTime;
 
         let durationMs = wakeUpTime.getTime() - bedtime.getTime();
 
-        
         if (durationMs < 0) {
             durationMs += 24 * 60 * 60 * 1000;
         }
         const sleepDurationHours = durationMs / (1000 * 60 * 60);
 
-        
         const dateKey = wakeUpTime.toISOString().split('T')[0];
 
         dailyData.set(dateKey, {
-            ...(dailyData.get(dateKey) || {}), 
-            sleepDuration: parseFloat(sleepDurationHours.toFixed(2)) 
+            ...(dailyData.get(dateKey) || {}),
+            sleepDuration: parseFloat(sleepDurationHours.toFixed(2))
         });
     });
 
-    
-    wellbeingEntries.forEach((entry: { entryDate: { toISOString: () => string; }; dayRating: any; }) => {
-        const dateKey = entry.entryDate.toISOString().split('T')[0]; 
+    wellbeingEntries.forEach((entry) => {
+        const dateKey = entry.entryDate.toISOString().split('T')[0];
         dailyData.set(dateKey, {
             ...(dailyData.get(dateKey) || {}),
             dayRating: entry.dayRating
@@ -146,7 +133,6 @@ function FindCorrelationFactor(
 
     const correlationInputData: CorrelationDataPoint[] = [];
     for (const [date, data] of dailyData.entries()) {
- 
         if (data.sleepDuration !== undefined && data.dayRating !== undefined) {
             correlationInputData.push({
                 sleepDuration: data.sleepDuration,
@@ -166,22 +152,4 @@ function FindCorrelationFactor(
     return responseBody;
 }
 
-
 export { checkError, FindCorrelationFactor };
-
-//usage
-
-// wellBeingRouter.get("/", async(c) => {
-//     try {
-//         // ... your route logic ...
-//         // const result = await db.wellbeingEntry.findMany(...);
-//         // return c.json({ data: result }, 200);
-//         return c.json({ message: "Example success" }, 200);
-//     } catch (error) {
-//         const structuredError = checkError(error);
-//         return c.json(
-//             { error: structuredError.message, details: structuredError.details },
-//             structuredError.statusCode
-//         );
-//     }
-// });

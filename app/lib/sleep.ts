@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { User } from "@/lib/generated/prisma";
-import { z } from "zod";
+//import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
-import { Param, PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+
 
 
 type HonoEnv = {
@@ -31,6 +33,7 @@ sleepRouter.use("*", async (c, next) => {
 const sleepRouterReceivingJson = z.object({
   userId: z.string().uuid(),
   bedtime: z.string().datetime(),
+  
   wakeUpTime: z.string().datetime(),
   qualityRating: z.number().int().min(1).max(10),
   comments: z.string().optional(),
@@ -60,6 +63,8 @@ const updateSpecificFieldSchema = z.object({
   comments: z.string().nullable().optional(),
   durationHours: z.number().optional(),
 }).partial();
+
+
 
 type CreateSleepEntryInput = z.infer<typeof sleepRouterReceivingJson>;
 type ReceiveDBSleepEntryArray = z.infer<typeof SleepEntryArraySchema>;
@@ -119,7 +124,9 @@ sleepRouter.post(
   }
 );
 
-sleepRouter.get("/", async (c) => {
+sleepRouter.get(  
+  "/",
+   async (c) => {
   const CurrentUserID = c.get("CurrentUser").id;
   try {
     const rawSleepEntries: unknown = await db.sleepEntry.findMany({

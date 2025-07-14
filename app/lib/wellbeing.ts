@@ -3,7 +3,6 @@ import { User } from "@/lib/generated/prisma";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { checkError } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status"; //this is interesting
 
@@ -207,6 +206,3 @@ wellBeingRouter.delete("/:id", async(c) => {
 export default wellBeingRouter;
 
 
-//----------I am making commit incase applying the utility error checking method resulted bugs ---------------//
-//This felt like breeze just, 
-    //ya, shut the fuck up you are just making a simple crud their is nothing to be happy about it.
