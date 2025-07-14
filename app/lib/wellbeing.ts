@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import checkError from "./utllity";
+import { checkError } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status"; //this is interesting
 
 type HonoEnv = {

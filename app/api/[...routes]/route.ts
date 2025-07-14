@@ -5,6 +5,7 @@ import { cors } from 'hono/cors';
 
 import sleepRouter from '@/app/lib/wellbeing';
 import wellBeingRouter from '@/app/lib/wellbeing';
+import insightsRouter from "@/app/lib/insight"
 
 const app = new Hono().basePath('/api')
 app.use('*', logger());
@@ -14,7 +15,7 @@ app.use('*', cors());
 //app.route('/auth', authRouter);
 app.route('/sleep', sleepRouter);
 app.route('/wellbeing', wellBeingRouter);
-// app.route('/insights', insightsRouter);
+app.route('/insights', insightsRouter);
 
 export const GET = handle(app)
 export const POST = handle(app)
