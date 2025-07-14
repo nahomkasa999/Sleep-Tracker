@@ -4,7 +4,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { checkError, FindCorrelationFactor } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import { createRoute } from '@hono/zod-openapi';
 import { subDays, startOfDay } from 'date-fns'; // Import date utility functions
 
 type HonoEnv = {
@@ -131,6 +130,9 @@ insightsRouter.get("/summary", async(c) => {
         const CurrentUserID = c.get("CurrentUser").id;
         const queryParams = c.req.query();
 
+        if(!queryParams){
+          return c.json({message: "no query is found"}, 404)
+        }
        
         const validatedQueryParams = SummaryQueryParamsSchema.safeParse(queryParams);
 
@@ -165,12 +167,14 @@ insightsRouter.get("/summary", async(c) => {
                 createdAt: true,
             }
         };
+
         if (filterStartDate && filterEndDate) {
             sleepEntriesQuery.where.createdAt = {
                 gte: filterStartDate,
                 lte: filterEndDate,
             };
         }
+        
         const sleepEntries = await db.sleepEntry.findMany(sleepEntriesQuery);
         const validatedSleepEntries: SleepEntryReceivingSchemaDBType = SleepEntryReceivingSchemaDBArray.parse(sleepEntries);
 
@@ -200,7 +204,11 @@ insightsRouter.get("/summary", async(c) => {
 
         if (validatedSleepEntries.length > 0) {
             validatedSleepEntries.forEach(entry => {
-                const duration = entry.wakeUpTime.getTime() - entry.bedtime.getTime();
+                let duration = entry.wakeUpTime.getTime() - entry.bedtime.getTime();
+                console.log(duration)
+                  if (duration < 0) {
+                       duration += 24 * 60 * 60 * 1000;
+                   }
                 totalSleepDurationMs += duration;
 
                 
@@ -226,7 +234,7 @@ insightsRouter.get("/summary", async(c) => {
         const averageSleepDurationHours = validatedSleepEntries.length > 0
             ? (totalSleepDurationMs / validatedSleepEntries.length) / (1000 * 60 * 60)
             : null;
-
+        console.log(averageSleepDurationHours)
         let totalWellbeingRating = 0;
         if (validatedWellbeingEntries.length > 0) {
             validatedWellbeingEntries.forEach(entry => {
