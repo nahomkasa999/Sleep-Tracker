@@ -205,7 +205,7 @@ insightsRouter.get("/summary", async(c) => {
         if (validatedSleepEntries.length > 0) {
             validatedSleepEntries.forEach(entry => {
                 let duration = entry.wakeUpTime.getTime() - entry.bedtime.getTime();
-                console.log(duration)
+             
                   if (duration < 0) {
                        duration += 24 * 60 * 60 * 1000;
                    }
@@ -234,7 +234,7 @@ insightsRouter.get("/summary", async(c) => {
         const averageSleepDurationHours = validatedSleepEntries.length > 0
             ? (totalSleepDurationMs / validatedSleepEntries.length) / (1000 * 60 * 60)
             : null;
-        console.log(averageSleepDurationHours)
+        
         let totalWellbeingRating = 0;
         if (validatedWellbeingEntries.length > 0) {
             validatedWellbeingEntries.forEach(entry => {
