@@ -1,18 +1,35 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { db as prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sendEmail } from "./email";
 
 export const auth = betterAuth({
-      database: prismaAdapter(prisma, {
-        provider: "postgresql", // or "mysql", "postgresql", ...etc
-    }),
-     emailAndPassword: {  
-        enabled: true
+  emailAndPassword: {
+    enabled: true,
+    sendResetPassword: async ({ user, url, token }, request) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        text: `Click the link to reset your password: ${url}`,
+      });
     },
-    socialProviders: { 
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Verify your email address",
+        text: `Click the link to verify your email: ${url}`,
+      });
+    },
+  },
+  socialProviders: {
         google: { 
-           clientId: process.env.GOOGLE_CLIENT_ID as string, 
-           clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
+            clientId: process.env.GOOGLE_CLIENT_ID as string, 
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
         }, 
     },
-})
+  database: prismaAdapter(db, {
+    provider: "postgresql",
+  }),
+});

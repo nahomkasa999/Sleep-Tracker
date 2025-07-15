@@ -6,26 +6,18 @@ import { db } from "@/lib/db";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 
+import { HonoEnv } from "../api/[...routes]/route";
 
-
-type HonoEnv = {
-  Variables: {
-    CurrentUser: User;
-  };
-};
 
 const sleepRouter = new Hono<HonoEnv>();
 
-sleepRouter.use("*", async (c, next) => {
-  const user = await db.user.findFirst();
+sleepRouter.use('*', async (c, next) => {
+  const user = c.get('user');
+  console.log(user)
   if (!user) {
-    return c.json(
-      { error: "No user found in the database. Please create a user first." },
-      404
-    );
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  c.set("CurrentUser", user);
-
+  c.set('user', user as User);
   await next();
 });
 
@@ -77,7 +69,7 @@ sleepRouter.post(
   "/",
   zValidator("json", sleepRouterReceivingJson),
   async (c) => {
-    const CurrentUserID = c.get("CurrentUser").id;
+    const CurrentUserID = c.get("user")!.id;
     const validatedBody = c.req.valid("json");
 
     let actualDurationHours = validatedBody.durationHours;
@@ -127,7 +119,8 @@ sleepRouter.post(
 sleepRouter.get(  
   "/",
    async (c) => {
-  const CurrentUserID = c.get("CurrentUser").id;
+
+  const CurrentUserID = c.get("user")!.id;
   try {
     const rawSleepEntries: unknown = await db.sleepEntry.findMany({
       where: {
@@ -259,7 +252,7 @@ sleepRouter.put("/:id", zValidator('json', updateSpecificFieldSchema), async (c)
     const updatedSleepEntry = await db.sleepEntry.update({
       where: {
         id: validatedId,
-        userId: c.get("CurrentUser").id
+        userId: c.get("user")!.id
       },
       data: dataToUpdate,
     });

@@ -11,7 +11,7 @@ import insightsRouter from "@/app/lib/insight"
 import apiDefinition from '@/app/lib/openapi-spec'
 import { swaggerUI } from '@hono/swagger-ui';
 
-type HonoEnv =  {
+export type HonoEnv =  {
     Variables: {
         user: typeof auth.$Infer.Session.user | null;
         session: typeof auth.$Infer.Session.session | null

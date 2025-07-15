@@ -5,25 +5,17 @@ import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
 import { checkError } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status"; //this is interesting
-
-type HonoEnv = {
-  Variables: {
-    CurrentUser: User;
-  };
-};
+import { HonoEnv } from "../api/[...routes]/route";
 
 const wellBeingRouter = new Hono<HonoEnv>();
 
-wellBeingRouter.use("*", async (c, next) => {
-  const user = await db.user.findFirst();
+wellBeingRouter.use('*', async (c, next) => {
+  const user = c.get('user');
+  console.log(user)
   if (!user) {
-    return c.json(
-      { error: "No user found in the database. Please create a user first." },
-      404
-    );
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  c.set("CurrentUser", user);
-
+  c.set('user', user as User);
   await next();
 });
 
@@ -78,7 +70,7 @@ const wellBeingInputSchemaforPut = z.object({
 type wellbeingPutType = z.infer<typeof wellBeingInputSchemaforPut>
 
 wellBeingRouter.get("/", async (c) => {
-  const CurrentUserID = c.get("CurrentUser").id;
+  const CurrentUserID = c.get("user")!.id;
   try {
     const AllWellBeingDatas = await db.wellbeingEntry.findMany({
       where: {
@@ -135,7 +127,7 @@ wellBeingRouter.get("/:id", async (c) => {
 wellBeingRouter.post("/", zValidator("json", wellBeingInputSchema), async(c) => {
 
     try {
-        const CurrentUserID = c.get("CurrentUser").id;
+        const CurrentUserID = c.get("user")!.id;
         const validatedBody: TypeOfDataFromFrontEnd = c.req.valid('json');
 
         const newWellbeingEntry = await db.wellbeingEntry.create({

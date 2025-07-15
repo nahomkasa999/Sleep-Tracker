@@ -5,25 +5,18 @@ import { db } from "@/lib/db";
 import { checkError, FindCorrelationFactor } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { subDays, startOfDay } from 'date-fns'; // Import date utility functions
+import { HonoEnv } from "../api/[...routes]/route";
 
-type HonoEnv = {
-  Variables: {
-    CurrentUser: User;
-  };
-};
 
 const insightsRouter = new Hono<HonoEnv>();
 
-insightsRouter.use("*", async (c, next) => {
-  const user = await db.user.findFirst();
+insightsRouter.use('*', async (c, next) => {
+  const user = c.get('user');
+  console.log(user)
   if (!user) {
-    return c.json(
-      { error: "No user found in the database. Please create a user first." },
-      404
-    );
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  c.set("CurrentUser", user);
-
+  c.set('user', user as User);
   await next();
 });
 
@@ -52,7 +45,7 @@ type WellbeingEntryReceivingSchemaDBType = z.infer<typeof WellbeingEntryReceivin
 insightsRouter.get("/correlation", async(c) => {
 
     try {
-        const CurrentUserID = c.get("CurrentUser").id;
+        const CurrentUserID = c.get("user")!.id;
 
         const sleepEntries = await db.sleepEntry.findMany({
             where: { userId: CurrentUserID },
@@ -127,7 +120,7 @@ const SummaryResponseSchema = z.object({
 //------------GET /insights/summary Route----------//
 insightsRouter.get("/summary", async(c) => {
     try {
-        const CurrentUserID = c.get("CurrentUser").id;
+        const CurrentUserID = c.get("user")!.id;
         const queryParams = c.req.query();
 
         if(!queryParams){
