@@ -118,7 +118,20 @@ const apiDefinition = {
           }
         },
         responses: {
-          "200": { description: "Wellbeing entry updated successfully" },
+          "200": {
+            description: "Wellbeing entry updated successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
+                  }
+                }
+              }
+            }
+          },
           "400": { "$ref": "#/components/responses/BadRequestError" },
           "404": { "$ref": "#/components/responses/NotFoundError" },
           "500": { "$ref": "#/components/responses/ServerError" }
@@ -136,7 +149,20 @@ const apiDefinition = {
           },
         ],
         responses: {
-          "200": { description: "Wellbeing entry deleted successfully" },
+          "200": {
+            description: "Wellbeing entry deleted successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
+                  }
+                }
+              }
+            }
+          },
           "404": { "$ref": "#/components/responses/NotFoundError" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -174,7 +200,20 @@ const apiDefinition = {
           }
         },
         responses: {
-          "201": { description: "Successfully added to the database" },
+          "201": {
+            description: "Successfully added to the database",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" }
+                    // Backend returns only message for sleep POST
+                  }
+                }
+              }
+            }
+          },
           "400": { "$ref": "#/components/responses/BadRequestError" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -201,7 +240,7 @@ const apiDefinition = {
                   type: "object",
                   properties: {
                     message: { type: "string" },
-                    body: { "$ref": "#/components/schemas/SleepEntry" }
+                    data: { "$ref": "#/components/schemas/SleepEntry" }
                   }
                 }
               }
@@ -232,7 +271,20 @@ const apiDefinition = {
           }
         },
         responses: {
-          "200": { description: "Sleep entry updated successfully" },
+          "200": {
+            description: "Sleep entry updated successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    data: { "$ref": "#/components/schemas/SleepEntry" }
+                  }
+                }
+              }
+            }
+          },
           "400": { "$ref": "#/components/responses/BadRequestError" },
           "404": { "$ref": "#/components/responses/NotFoundError" },
           "500": { "$ref": "#/components/responses/ServerError" }
@@ -250,7 +302,20 @@ const apiDefinition = {
           },
         ],
         responses: {
-          "200": { description: "Successfully deleted item" },
+          "200": {
+            description: "Successfully deleted item",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    data: { "$ref": "#/components/schemas/SleepEntry" }
+                  }
+                }
+              }
+            }
+          },
           "404": { "$ref": "#/components/responses/NotFoundError" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -391,7 +456,7 @@ const apiDefinition = {
       "SleepInput": {
         type: "object",
         properties: {
-          userId: { type: "string", format: "uuid", description: "ID of the user (can be omitted if handled by middleware)." },
+          // userId is derived from context, not sent in body for creation
           bedtime: { type: "string", format: "date-time", description: "Time user went to bed." },
           wakeUpTime: { type: "string", format: "date-time", description: "Time user woke up." },
           qualityRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of sleep quality (1-10)." },
@@ -404,7 +469,7 @@ const apiDefinition = {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid", description: "Unique ID of the sleep entry." },
-          userId: { type: "string", format: "uuid", nullable: true, description: "ID of the user." },
+          userId: { type: "string", format: "uuid", nullable: true, description: "ID of the user." }, // Added nullable
           bedtime: { type: "string", format: "date-time", description: "Bedtime." },
           wakeUpTime: { type: "string", format: "date-time", description: "Wake up time." },
           qualityRating: { type: "integer", minimum: 1, maximum: 10, description: "Quality rating." },
@@ -428,7 +493,7 @@ const apiDefinition = {
       "SummaryResponse": {
         type: "object",
         properties: {
-          message: { type: "string" },
+          message: { type: "string" }, // Added message property
           summary: {
             type: "object",
             properties: {

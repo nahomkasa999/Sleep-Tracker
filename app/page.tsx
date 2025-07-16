@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { authClient } from "./lib/auth-client";
 import { useSession } from "./lib/auth-client";
 
-export default function HomePage() { 
+import SleepPage from "../components/sleep/sleep";
+
+export default function HomePage() {
   const { data: session, isPending } = useSession();
 
   if (isPending === true) {
@@ -19,6 +21,7 @@ export default function HomePage() {
     <div>
       <button onClick={() => authClient.signOut()}>Sign Out</button>
       <h1>Welcome, {session.user?.email}!</h1>
+      <SleepPage/>
     </div>
   );
 }

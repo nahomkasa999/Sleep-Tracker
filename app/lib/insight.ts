@@ -19,6 +19,30 @@ insightsRouter.use('*', async (c, next) => {
   c.set('user', user as User);
   await next();
 });
+//---------fro the react query purpose------------------//
+
+export interface SleepSummaryDay {
+  date: string;
+  qualityRating: number;
+}
+
+export interface WellbeingSummary {
+  averageSleepDurationHours: number;
+  bestSleepDays: SleepSummaryDay[];
+  worstSleepDays: SleepSummaryDay[];
+  averageWellbeingRating: number;
+}
+
+export interface SleepInsightsResponse {
+  message: string;
+  summary: WellbeingSummary;
+}
+
+export interface GetSleepInsightsParams {
+  period?: 'week' | 'month' | 'all'; 
+  startDate?: string;               
+  endDate?: string;                
+}
 
 //------------The type of Data we are getting from DB----------//
 const SleepEntryReceivingSchemaDB = z.object({
@@ -38,8 +62,8 @@ const WellbeingEntryReceivingSchemaDB = z.object({
 const SleepEntryReceivingSchemaDBArray = z.array(SleepEntryReceivingSchemaDB)
 const WellbeingEntryReceivingSchemaDBArray = z.array(WellbeingEntryReceivingSchemaDB)
 
-type SleepEntryReceivingSchemaDBType = z.infer<typeof SleepEntryReceivingSchemaDBArray>
-type WellbeingEntryReceivingSchemaDBType = z.infer<typeof WellbeingEntryReceivingSchemaDBArray>
+export type SleepEntryReceivingSchemaDBType = z.infer<typeof SleepEntryReceivingSchemaDBArray>
+export type WellbeingEntryReceivingSchemaDBType = z.infer<typeof WellbeingEntryReceivingSchemaDBArray>
 
 
 insightsRouter.get("/correlation", async(c) => {

@@ -47,8 +47,8 @@ const correlationResponseSchema = z.object({
   dataPoints: z.array(correlationDataPointSchema),
 });
 
-type CorrelationResponse = z.infer<typeof correlationResponseSchema>;
-type CorrelationDataPoint = z.infer<typeof correlationDataPointSchema>;
+export type CorrelationResponse = z.infer<typeof correlationResponseSchema>;
+export type CorrelationDataPoint = z.infer<typeof correlationDataPointSchema>;
 
 function calculatePearsonCorrelation(data: CorrelationDataPoint[]): { correlationCoefficient: number; dataPoints: CorrelationDataPoint[] } {
   const filteredData = data.filter(d =>
@@ -153,3 +153,21 @@ function FindCorrelationFactor(
 }
 
 export { checkError, FindCorrelationFactor };
+
+export const getErrorMessage = async (res: Response): Promise<string> => {
+  try {
+    const errorData = await res.json();
+    if (typeof errorData.error === 'string' && errorData.error.length > 0) {
+      return errorData.error;
+    }
+    if (typeof errorData.message === 'string' && errorData.message.length > 0) {
+      return errorData.message;
+    }
+    if (Array.isArray(errorData.error) && errorData.error.length > 0 && errorData.error[0].message) {
+      return `Validation Error: ${errorData.error[0].message}`;
+    }
+  } catch (e) {
+    console.error("Failed to parse error response JSON or no specific error/message field:", e);
+  }
+  return res.statusText || 'Unknown error occurred';
+};

@@ -23,18 +23,17 @@ sleepRouter.use('*', async (c, next) => {
 
 
 const sleepRouterReceivingJson = z.object({
-  userId: z.string().uuid(),
+  userId: z.string(),
   bedtime: z.string().datetime(),
-  
   wakeUpTime: z.string().datetime(),
   qualityRating: z.number().int().min(1).max(10),
   comments: z.string().optional(),
   durationHours: z.number().optional(),
-});
+}); 
 
 const sleepRouterReceivingJsonDB = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid().nullable(),
+  userId: z.string().nullable(),
   bedtime: z.date(),
   wakeUpTime: z.date(),
   qualityRating: z.number().int().min(1).max(10),
@@ -58,12 +57,56 @@ const updateSpecificFieldSchema = z.object({
 
 
 
-type CreateSleepEntryInput = z.infer<typeof sleepRouterReceivingJson>;
-type ReceiveDBSleepEntryArray = z.infer<typeof SleepEntryArraySchema>;
-type ParamsId = z.infer<typeof sleepRouterEnteryID>;
-type SingleSleepRouteEntry = z.infer<typeof sleepRouterReceivingJsonDB>;
-type UpdatingType = z.infer<typeof updateSpecificFieldSchema>;
+export type CreateSleepEntryInput = z.infer<typeof sleepRouterReceivingJson>;
+export type ReceiveDBSleepEntryArray = z.infer<typeof SleepEntryArraySchema>;
+export type ParamsId = z.infer<typeof sleepRouterEnteryID>;
+export type SingleSleepRouteEntry = z.infer<typeof sleepRouterReceivingJsonDB>;
+export type UpdatingSleepType = z.infer<typeof updateSpecificFieldSchema>;
 
+sleepRouter.get(  
+  "/",
+   async (c) => {
+
+  const CurrentUserID = c.get("user")!.id;
+  try {
+    const rawSleepEntries: unknown = await db.sleepEntry.findMany({
+      where: {
+        userId: CurrentUserID,
+      },
+    });
+    const validatedSleepEntries: ReceiveDBSleepEntryArray =
+      SleepEntryArraySchema.parse(rawSleepEntries);
+    return c.json(
+      {
+        message: "Successfully retrieved sleep entries",
+        data: validatedSleepEntries,
+      },
+      200
+    );
+  } catch (error) {
+    console.error("Error getting user sleep entries:", error);
+    if (error instanceof z.ZodError) {
+      return c.json(
+        {
+          error: "Data validation failed for retrieved sleep entries",
+          details: error.errors,
+        },
+        500
+      );
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      return c.json({ error: `Database error: ${error.message}` }, 500);
+    }
+    return c.json(
+      {
+        error: `An unexpected error occurred: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      },
+      500
+    );
+  }
+});
 
 sleepRouter.post(
   "/",
@@ -116,50 +159,7 @@ sleepRouter.post(
   }
 );
 
-sleepRouter.get(  
-  "/",
-   async (c) => {
 
-  const CurrentUserID = c.get("user")!.id;
-  try {
-    const rawSleepEntries: unknown = await db.sleepEntry.findMany({
-      where: {
-        userId: CurrentUserID,
-      },
-    });
-    const validatedSleepEntries: ReceiveDBSleepEntryArray =
-      SleepEntryArraySchema.parse(rawSleepEntries);
-    return c.json(
-      {
-        message: "Successfully retrieved sleep entries",
-        data: validatedSleepEntries,
-      },
-      200
-    );
-  } catch (error) {
-    console.error("Error getting user sleep entries:", error);
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error: "Data validation failed for retrieved sleep entries",
-          details: error.errors,
-        },
-        500
-      );
-    }
-    if (error instanceof PrismaClientKnownRequestError) {
-      return c.json({ error: `Database error: ${error.message}` }, 500);
-    }
-    return c.json(
-      {
-        error: `An unexpected error occurred: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      },
-      500
-    );
-  }
-});
 
 sleepRouter.get("/:id", async (c) => {
   try {
@@ -181,7 +181,7 @@ sleepRouter.get("/:id", async (c) => {
       const validatedSingleEntry: SingleSleepRouteEntry =
         sleepRouterReceivingJsonDB.parse(GetSingleSleepRoute);
 
-      return c.json({ message: "Validated data", body: validatedSingleEntry });
+      return c.json({ message: "Validated data", data: validatedSingleEntry });
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error("Zod validation failed for DB entry:", error.errors);
@@ -217,7 +217,7 @@ sleepRouter.put("/:id", zValidator('json', updateSpecificFieldSchema), async (c)
     return c.json({ error: "An unexpected error occurred while validating ID" }, 500);
   }
 
-  const validatedBody = c.req.valid('json') as UpdatingType;
+  const validatedBody = c.req.valid('json') as UpdatingSleepType;
 
   if (Object.keys(validatedBody).length === 0) {
     return c.json({ message: "No fields provided for update." }, 400);
@@ -287,13 +287,12 @@ sleepRouter.delete("/:id", async(c) => {
   }
 
   try {
-    const deleteItem = await db.sleepEntry.delete({
+    const deletedItem = await db.sleepEntry.delete({
     where:{
       id: validatedId
     }
   })
-  console.log(deleteItem)
-  return c.json({message: "successfully deleted item"})
+  return c.json({message: "successfully deleted item", data: deletedItem}, 200)
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {

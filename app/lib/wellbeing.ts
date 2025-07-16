@@ -41,13 +41,13 @@ const wellBeingAcceptingThings = z.object({
 });
 
 const WellBeingReceivedfromDBinArray = z.array(wellBeingAcceptingThings);
-type wellBeingReceingSchemaDB = z.infer<typeof WellBeingReceivedfromDBinArray>;
+export type wellBeingReceingSchemaDB = z.infer<typeof WellBeingReceivedfromDBinArray>;
 
 //-----------------for Get requires with ID----------------------//
 const valideParameter = z.string().uuid();
-type validparametertype = z.infer<typeof valideParameter>;
+export type validparametertype = z.infer<typeof valideParameter>;
 
-type singleWellBeingReceingSchemaDB = z.infer<typeof wellBeingAcceptingThings>;
+export type singleWellBeingReceingSchemaDB = z.infer<typeof wellBeingAcceptingThings>;
 
 //----------------for post("/") - for the commign schema from frontend -----------------//
 const wellBeingInputSchema = z.object({
@@ -57,7 +57,7 @@ const wellBeingInputSchema = z.object({
   comments: z.string().nullable().optional(),
 });
 
-type TypeOfDataFromFrontEnd = z.infer<typeof wellBeingInputSchema>;
+export type TypeOfDataFromFrontEnd = z.infer<typeof wellBeingInputSchema>;
 
 //---------------for put(/:id) --------------------------------------//
 const wellBeingInputSchemaforPut = z.object({
@@ -67,7 +67,7 @@ const wellBeingInputSchemaforPut = z.object({
   comments: z.string().nullable().optional(),
 });
 
-type wellbeingPutType = z.infer<typeof wellBeingInputSchemaforPut>
+export type wellbeingPutType = z.infer<typeof wellBeingInputSchemaforPut>
 
 wellBeingRouter.get("/", async (c) => {
   const CurrentUserID = c.get("user")!.id;
@@ -168,7 +168,7 @@ wellBeingRouter.put("/:id", zValidator("json", wellBeingInputSchemaforPut), asyn
             }
         })
 
-        return c.json({message: "successfully updated"}, 200)
+        return c.json({message: "successfully updated", data: updateWellbeingData}, 200)
     } catch (error) {
         return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
     }
@@ -183,13 +183,13 @@ wellBeingRouter.delete("/:id", async(c) => {
         return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
     }
     try {
-        const deletingItem =  await db.wellbeingEntry.delete({
+        const deletedItem =  await db.wellbeingEntry.delete({
             where:{
                 id: validatedId,
             }
         })
 
-        return c.json({message: "successfully deleted"}, 200)
+        return c.json({message: "successfully deleted", data: deletedItem}, 200)
     } catch (error) {
          return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
     }
