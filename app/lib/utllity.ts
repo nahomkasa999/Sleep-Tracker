@@ -154,20 +154,3 @@ function FindCorrelationFactor(
 
 export { checkError, FindCorrelationFactor };
 
-export const getErrorMessage = async (res: Response): Promise<string> => {
-  try {
-    const errorData = await res.json();
-    if (typeof errorData.error === 'string' && errorData.error.length > 0) {
-      return errorData.error;
-    }
-    if (typeof errorData.message === 'string' && errorData.message.length > 0) {
-      return errorData.message;
-    }
-    if (Array.isArray(errorData.error) && errorData.error.length > 0 && errorData.error[0].message) {
-      return `Validation Error: ${errorData.error[0].message}`;
-    }
-  } catch (e) {
-    console.error("Failed to parse error response JSON or no specific error/message field:", e);
-  }
-  return res.statusText || 'Unknown error occurred';
-};
