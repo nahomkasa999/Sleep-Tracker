@@ -75,6 +75,7 @@ const config: Config = {
         sans: "var(--font-sans)",
         serif: "var(--font-serif)",
         mono: "var(--font-mono)",
+        header: "var(--font-header)"
       },
       boxShadow: {
         "2xs": "var(--shadow-2xs)",
