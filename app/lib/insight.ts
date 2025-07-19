@@ -4,21 +4,22 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { checkError, FindCorrelationFactor } from "./utllity";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import { subDays, startOfDay } from 'date-fns'; // Import date utility functions
+import { subDays, startOfDay } from 'date-fns';
 import { HonoEnv } from "../api/[...routes]/route";
+import { getCorrelationInsight, getOverviewInsight } from "./gemini";
 
 
 const insightsRouter = new Hono<HonoEnv>();
 
 insightsRouter.use('*', async (c, next) => {
-  const user = c.get('user');
-  console.log(user)
-  if (!user) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-  c.set('user', user as User);
-  await next();
+    const user = c.get('user');
+    if (!user) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    c.set('user', user as User);
+    await next();
 });
+
 //---------fro the react query purpose------------------//
 
 export interface SleepSummaryDay {
@@ -283,6 +284,100 @@ insightsRouter.get("/summary", async(c) => {
 
     } catch (error) {
         return c.json( { ...checkError(error)}, checkError(error).statusCode as ContentfulStatusCode);
+    }
+});
+
+const AIQueryParamsSchema = z.object({
+    period: z.enum(['weekly', 'monthly', 'all']).optional(),
+});
+
+insightsRouter.get("/AI/correlation", async (c) => {
+    try {
+        const CurrentUserID = c.get("user")!.id;
+        const { period } = AIQueryParamsSchema.parse(c.req.query());
+
+        let startDate: Date | undefined;
+        if (period === 'weekly') {
+            startDate = subDays(new Date(), 7);
+        } else if (period === 'monthly') {
+            startDate = subDays(new Date(), 30);
+        }
+
+        const sleepEntries = await db.sleepEntry.findMany({
+            where: { 
+                userId: CurrentUserID,
+                createdAt: startDate ? { gte: startDate } : undefined
+            },
+            select: {
+                bedtime: true,
+                wakeUpTime: true,
+                qualityRating: true,
+                createdAt: true,
+            }
+        });
+
+        const wellbeingEntries = await db.wellbeingEntry.findMany({
+            where: { 
+                userId: CurrentUserID,
+                entryDate: startDate ? { gte: startDate } : undefined
+            },
+            select: {
+                entryDate: true,
+                dayRating: true,
+                createdAt: true,
+            }
+        });
+
+        const insight = await getCorrelationInsight(sleepEntries, wellbeingEntries);
+        return c.json({ insight });
+
+    } catch (error) {
+        return c.json({ ...checkError(error) }, checkError(error).statusCode as ContentfulStatusCode);
+    }
+});
+
+insightsRouter.get("/AI/overview", async (c) => {
+    try {
+        const CurrentUserID = c.get("user")!.id;
+        const { period } = AIQueryParamsSchema.parse(c.req.query());
+
+        let startDate: Date | undefined;
+        if (period === 'weekly') {
+            startDate = subDays(new Date(), 7);
+        } else if (period === 'monthly') {
+            startDate = subDays(new Date(), 30);
+        }
+
+        const sleepEntries = await db.sleepEntry.findMany({
+            where: { 
+                userId: CurrentUserID,
+                createdAt: startDate ? { gte: startDate } : undefined
+            },
+            select: {
+                bedtime: true,
+                wakeUpTime: true,
+                qualityRating: true,
+                createdAt: true,
+            }
+        });
+
+        const wellbeingEntries = await db.wellbeingEntry.findMany({
+            where: { 
+                userId: CurrentUserID,
+                entryDate: startDate ? { gte: startDate } : undefined
+            },
+            select: {
+                entryDate: true,
+                dayRating: true,
+                createdAt: true,
+            }
+        });
+
+        const insight = await getOverviewInsight(sleepEntries, wellbeingEntries);
+        return c.json({ insight });
+
+    } catch (error) {
+        return c.json({ ...checkError(error) }, checkError(error).statusCode as ContentfulStatusCode);
     }
 });
 

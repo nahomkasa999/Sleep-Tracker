@@ -2,9 +2,7 @@ import { Hono } from 'hono'
 import { handle } from 'hono/vercel'
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
-
 import { auth } from "@/app/lib/auth";
-
 import sleepRouter from '@/app/lib/sleep';
 import wellBeingRouter from '@/app/lib/wellbeing';
 import insightsRouter from "@/app/lib/insight"

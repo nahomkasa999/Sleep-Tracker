@@ -321,6 +321,62 @@ const apiDefinition = {
         }
       }
     },
+    "/insights/AI/correlation": {
+      "get": {
+        summary: "Get AI-powered correlation analysis",
+        parameters: [
+          {
+            name: "period",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: ["weekly", "monthly", "all"]
+            },
+            description: "The period over which to analyze the correlation."
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Successfully retrieved AI correlation insight",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/AIInsightResponse" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/insights/AI/overview": {
+      "get": {
+        summary: "Get AI-powered overview of sleep and well-being",
+        parameters: [
+          {
+            name: "period",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: ["weekly", "monthly", "all"]
+            },
+            description: "The period over which to generate the overview."
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Successfully retrieved AI overview insight",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/AIInsightResponse" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
     "/insights/correlation": {
         "get": {
             summary: "Calculate correlation between sleep duration and day rating",
@@ -537,6 +593,13 @@ const apiDefinition = {
           errorType: { type: "string", enum: ["ZodError", "PrismaError", "UnknownError"], description: "Type of error." }
         },
         required: ["error"]
+      },
+      "AIInsightResponse": {
+        type: "object",
+        properties: {
+          insight: { type: "string", description: "The AI-generated insight." }
+        },
+        required: ["insight"]
       }
     },
     responses: {
