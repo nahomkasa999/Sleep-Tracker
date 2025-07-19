@@ -4,28 +4,60 @@ import { z } from "zod";
 import { SleepEntryReceivingSchemaDBType, WellbeingEntryReceivingSchemaDBType } from "./insight";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+console.log(process.env.GEMINI_API_KEY)
 
 const InsightSchema = z.object({
   insight: z.string(),
 });
+function cleanAndParseJsonString(jsonString: string) {
+  let cleanedString = jsonString.trim();
+  if (cleanedString.startsWith("'") && cleanedString.endsWith("'")) {
+    cleanedString = cleanedString.substring(1, cleanedString.length - 1);
+  }
+
+  const startDelimiter = '```json\\n';
+  const endDelimiter = '```';
+
+  if (cleanedString.startsWith(startDelimiter)) {
+    cleanedString = cleanedString.substring(startDelimiter.length);
+  }
+  if (cleanedString.endsWith(endDelimiter)) {
+    cleanedString = cleanedString.substring(0, cleanedString.length - endDelimiter.length);
+  }
+
+  cleanedString = cleanedString.trim();
+  console.log(cleanedString)
+
+  try {
+    const parsedObject = JSON.parse(cleanedString);
+    return parsedObject;
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
+    return null;
+  }
+}
 
 async function generateAndValidateInsight(
   prompt: string,
-  model: string = "gemini-pro"
+  model: string = "gemini-2.5-flash"
 ) {
   const generativeModel = genAI.getGenerativeModel({ model });
   const result = await generativeModel.generateContent(prompt);
   const response = await result.response;
-  const text = response.text();
-
+  const jsonfile = response.candidates![0].content.parts[0].text
+  if(jsonfile !== undefined){
+  const parsed = cleanAndParseJsonString(jsonfile);
+  console.log(parsed)
   try {
-    const parsed = JSON.parse(text);
     const validated = InsightSchema.parse(parsed);
     return validated.insight;
   } catch (error) {
     console.error("Gemini API response validation failed:", error);
     throw new Error("Invalid response from AI service.");
   }
+
+  }
+  
 }
 
 export async function getCorrelationInsight(

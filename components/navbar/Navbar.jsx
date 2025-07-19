@@ -1,5 +1,5 @@
 'use client';
-
+ import React, { useContext, useEffect, useState} from "react"
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BarChart2, BrainCircuit, LayoutDashboard, Plus } from 'lucide-react';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/tooltip';
 // import { useAddEntry } from '@/components/add-entry-dialog';
  import { Button } from '@/components/ui/button';
+ import { usePopUpContext } from "../context"; 
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -20,7 +21,7 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
-//   const { setOpen } = useAddEntry();
+    const {isOpen,setIsOpen} = usePopUpContext()
 
   return (
     <TooltipProvider>
@@ -56,7 +57,7 @@ export function BottomNav() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                // onClick={() => setOpen(true)}
+                onClick={() => {setIsOpen((prev) => !prev)}}
                 className="flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground transition-all hover:bg-primary/90"
               >
                 <Plus className="h-6 w-6" />
