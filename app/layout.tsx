@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomNav } from "@/components/navbar/Navbar";
 import Providers from "@/components/Providers";
 import "./globals.css";
+import AddEntry from "@/components/AddEntry/AddEntry";
 
 
 const geistSans = Geist({
@@ -28,12 +29,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+       <Providers>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased mb-20`}
       >
-        <Providers> {children}</Providers>
+        <main className="mx-0 my-0 md:mt-[3%] md:mr-[25%] md:mb-[5%] md:ml-[25%]">
+          {children}
+        </main>
+        <AddEntry/>
         <BottomNav />
+        
       </body>
+      </Providers>
     </html>
   );
 }

@@ -4,7 +4,6 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { auth } from "@/app/lib/auth";
 import sleepRouter from '@/app/lib/sleep';
-import wellBeingRouter from '@/app/lib/wellbeing';
 import insightsRouter from "@/app/lib/insight"
 import apiDefinition from '@/app/lib/openapi-spec'
 import { swaggerUI } from '@hono/swagger-ui';
@@ -49,7 +48,6 @@ app.on(["POST", "GET"], "/auth/*", (c) => {
 });
 
 app.route('/sleep', sleepRouter);
-app.route('/wellbeing', wellBeingRouter);
 app.route('/insights', insightsRouter);
 
 app.get("/swagger", swaggerUI({url: "/api/doc"}))

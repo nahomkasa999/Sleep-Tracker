@@ -21,7 +21,6 @@ model User {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   sleepEntries     SleepEntry[]
-  wellbeingEntries WellbeingEntry[]
   name             String
   emailVerified    Boolean
   image            String?
@@ -32,34 +31,25 @@ model User {
 }
 
 model SleepEntry {
-  id            String   @id @default(uuid())
-  userId        String // Foreign key to User
-  user          User     @relation(fields: [userId], references: [id])
-  bedtime       DateTime
-  wakeUpTime    DateTime
-  durationHours Float // Store duration in hours for easier charting
-  qualityRating Int      @map("sleep_quality_rating") @default(5) @db.SmallInt // 1-10
-  comments      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(uuid())
+  userId          String // Foreign key to User
+  user            User      @relation(fields: [userId], references: [id])
+  bedtime         DateTime
+  wakeUpTime      DateTime
+  durationHours   Float     // Store duration in hours for easier charting
+  qualityRating   Int       @map("sleep_quality_rating") @default(5) @db.SmallInt // 1-10
+  entryDate       DateTime  @unique @default(now()) 
+  dayRating       Int       @map("day_rating") @default(5) @db.SmallInt // 1-10
+  mood            Mood?     
+  sleepcomments   String?
+  daycomments     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Maps this model to a table named 'sleep_entries' in the DB
   @@map("sleep_entries")
 }
 
-model WellbeingEntry {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  entryDate DateTime @unique
-  dayRating Int      @map("day_rating") @default(5) @db.SmallInt // 1-10
-  mood      Mood? // e.g., 'Happy', 'Stressed', 'Neutral'
-  comments  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("wellbeing_entries")
-}
 
 enum Mood {
   Happy

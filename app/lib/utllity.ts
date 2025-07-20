@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { SleepEntryReceivingSchemaDBType } from "@/app/lib/insight"; // Corrected import path
 
 interface StructuredError {
   statusCode: number;
@@ -99,48 +100,34 @@ function calculatePearsonCorrelation(data: CorrelationDataPoint[]): { correlatio
 }
 
 function FindCorrelationFactor(
-    sleepEntries: { bedtime: Date; wakeUpTime: Date; qualityRating: number; createdAt: Date; }[],
-    wellbeingEntries: { entryDate: Date; dayRating: number; createdAt: Date; }[]
+    sleepEntries: SleepEntryReceivingSchemaDBType
 ): CorrelationResponse {
-    const dailyData = new Map<string, { sleepDuration?: number; dayRating?: number }>();
+    const correlationInputData: CorrelationDataPoint[] = [];
 
     sleepEntries.forEach((entry) => {
-        const bedtime = entry.bedtime;
-        const wakeUpTime = entry.wakeUpTime;
+        // Prioritize durationHours if available, otherwise calculate from bedtime/wakeUpTime
+        const actualSleepDuration = (entry.durationHours !== null && entry.durationHours !== undefined)
+            ? entry.durationHours
+            : (() => {
+                let durationMs = entry.wakeUpTime.getTime() - entry.bedtime.getTime();
+                if (durationMs < 0) {
+                    durationMs += 24 * 60 * 60 * 1000;
+                }
+                return parseFloat((durationMs / (1000 * 60 * 60)).toFixed(2));
+            })();
 
-        let durationMs = wakeUpTime.getTime() - bedtime.getTime();
+        const dateKey = entry.entryDate.toISOString().split('T')[0]; // Use entryDate for the key
 
-        if (durationMs < 0) {
-            durationMs += 24 * 60 * 60 * 1000;
-        }
-        const sleepDurationHours = durationMs / (1000 * 60 * 60);
-
-        const dateKey = wakeUpTime.toISOString().split('T')[0];
-
-        dailyData.set(dateKey, {
-            ...(dailyData.get(dateKey) || {}),
-            sleepDuration: parseFloat(sleepDurationHours.toFixed(2))
-        });
-    });
-
-    wellbeingEntries.forEach((entry) => {
-        const dateKey = entry.entryDate.toISOString().split('T')[0];
-        dailyData.set(dateKey, {
-            ...(dailyData.get(dateKey) || {}),
-            dayRating: entry.dayRating
-        });
-    });
-
-    const correlationInputData: CorrelationDataPoint[] = [];
-    for (const [date, data] of dailyData.entries()) {
-        if (data.sleepDuration !== undefined && data.dayRating !== undefined) {
+        // Ensure both sleepDuration and dayRating are present for a data point
+        if (actualSleepDuration !== undefined && actualSleepDuration !== null &&
+            entry.dayRating !== undefined && entry.dayRating !== null) {
             correlationInputData.push({
-                sleepDuration: data.sleepDuration,
-                dayRating: data.dayRating,
-                date: date
+                sleepDuration: actualSleepDuration,
+                dayRating: entry.dayRating,
+                date: dateKey
             });
         }
-    }
+    });
 
     const { correlationCoefficient, dataPoints } = calculatePearsonCorrelation(correlationInputData);
 
@@ -153,4 +140,3 @@ function FindCorrelationFactor(
 }
 
 export { checkError, FindCorrelationFactor };
-

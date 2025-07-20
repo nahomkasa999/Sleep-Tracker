@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PopupProvider } from '@/context/PopUpContext';
 
 
 interface ProvidersProps {
@@ -14,9 +15,9 @@ export default function Providers({ children }: ProvidersProps) {
 
 return (
     <QueryClientProvider client={queryClient}>
-      
+    <PopupProvider>
       {children}
-   
+    </PopupProvider>
     </QueryClientProvider>
   );
 }

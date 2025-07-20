@@ -37,7 +37,7 @@ const getErrorMessage = async (res: Response): Promise<string> => {  /// this ca
 
 //--- get requests without ID -------------------------//
 
-export const getSleepEntry = async (): Promise<{
+  export const getSleepEntry = async (): Promise<{
   message: string;
   data: SingleSleepRouteEntry[];
 }> => {

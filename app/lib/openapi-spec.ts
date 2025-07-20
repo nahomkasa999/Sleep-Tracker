@@ -14,160 +14,8 @@ const apiDefinition = {
     },
   ],
   paths: {
-    "/wellbeing": {
-      "get": {
-        summary: "Retrieve all wellbeing entries for the current user",
-        responses: {
-          "200": {
-            description: "Successfully fetched wellbeing data",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: { type: "string" },
-                    data: { type: "array", items: { "$ref": "#/components/schemas/WellbeingEntry" } }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "$ref": "#/components/responses/NotFoundError" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      },
-      "post": {
-        summary: "Create a new wellbeing entry",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: { "$ref": "#/components/schemas/WellbeingInput" }
-            }
-          }
-        },
-        responses: {
-          "201": {
-            description: "Wellbeing entry created successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: { type: "string" },
-                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequestError" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      }
-    },
-    "/wellbeing/{id}": {
-      "get": {
-        summary: "Retrieve a single wellbeing entry by ID",
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-            description: "Unique ID of the wellbeing entry.",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "Successfully fetched single wellbeing entry",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: { type: "string" },
-                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequestError" },
-          "404": { "$ref": "#/components/responses/NotFoundError" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      },
-      "put": {
-        summary: "Update an existing wellbeing entry by ID",
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-            description: "Unique ID of the wellbeing entry to update.",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: { "$ref": "#/components/schemas/WellbeingUpdateInput" }
-            }
-          }
-        },
-        responses: {
-          "200": {
-            description: "Wellbeing entry updated successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: { type: "string" },
-                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequestError" },
-          "404": { "$ref": "#/components/responses/NotFoundError" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      },
-      "delete": {
-        summary: "Delete a wellbeing entry by ID",
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-            description: "Unique ID of the wellbeing entry to delete.",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "Wellbeing entry deleted successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: { type: "string" },
-                    data: { "$ref": "#/components/schemas/WellbeingEntry" }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "$ref": "#/components/responses/NotFoundError" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      }
-    },
+    // Removed /wellbeing and /wellbeing/{id} paths as WellbeingEntry is merged into SleepEntry
+
     "/sleep": {
       "get": {
         summary: "Retrieve all sleep entries for the current user",
@@ -190,7 +38,7 @@ const apiDefinition = {
         }
       },
       "post": {
-        summary: "Create a new sleep entry",
+        summary: "Create a new sleep and daily well-being entry",
         requestBody: {
           required: true,
           content: {
@@ -221,7 +69,7 @@ const apiDefinition = {
     },
     "/sleep/{id}": {
       "get": {
-        summary: "Retrieve a single sleep entry by ID",
+        summary: "Retrieve a single sleep and daily well-being entry by ID",
         parameters: [
           {
             name: "id",
@@ -252,7 +100,7 @@ const apiDefinition = {
         }
       },
       "put": {
-        summary: "Update an existing sleep entry by ID",
+        summary: "Update an existing sleep and daily well-being entry by ID",
         parameters: [
           {
             name: "id",
@@ -291,7 +139,7 @@ const apiDefinition = {
         }
       },
       "delete": {
-        summary: "Delete a sleep entry by ID",
+        summary: "Delete a sleep and daily well-being entry by ID",
         parameters: [
           {
             name: "id",
@@ -467,6 +315,55 @@ const apiDefinition = {
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
+    },
+    "/insights/chartsdata": {
+      "get": {
+        summary: "Retrieve all data needed for analytics charts and AI insights.",
+        parameters: [
+          {
+            name: "period",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: ["week", "month", "all"]
+            },
+            description: "The period over which to retrieve chart data and insights."
+          },
+          {
+            name: "startDate",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              format: "date-time"
+            },
+            description: "Optional start date for the data (ISO 8601 format). Must be used with endDate."
+          },
+          {
+            name: "endDate",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              format: "date-time"
+            },
+            description: "Optional end date for the data (ISO 8601 format). Must be used with startDate."
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Successfully retrieved all charts data and AI insights",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/ChartsDataResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
     }
   },
   components: {
@@ -476,65 +373,41 @@ const apiDefinition = {
         enum: ["Happy", "Stressed", "Neutral", "Sad", "Excited", "Tired"],
         description: "User's mood for the day.",
       },
-      "WellbeingInput": {
-        type: "object",
-        properties: {
-          entryDate: { type: "string", format: "date-time", description: "Date of the wellbeing entry (ISO 8601 format)." },
-          dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of the day from 1 to 10." },
-          mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Optional mood for the day." },
-          comments: { type: "string", nullable: true, description: "Optional comments for the entry." },
-        },
-        required: ["entryDate", "dayRating"],
-      },
-      "WellbeingEntry": {
-        type: "object",
-        properties: {
-          id: { type: "string", format: "uuid", description: "Unique ID of the wellbeing entry." },
-          userId: { type: "string", format: "uuid", description: "ID of the user this entry belongs to." },
-          entryDate: { type: "string", format: "date-time", description: "Date of the wellbeing entry." },
-          dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of the day (1-10)." },
-          mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Mood for the day." },
-          comments: { type: "string", nullable: true, description: "Comments for the entry." },
-          createdAt: { type: "string", format: "date-time", description: "Timestamp of creation." },
-          updatedAt: { type: "string", format: "date-time", description: "Timestamp of last update." }
-        },
-        required: ["id", "userId", "entryDate", "dayRating", "createdAt", "updatedAt"]
-      },
-      "WellbeingUpdateInput": {
-          type: "object",
-          properties: {
-              entryDate: { type: "string", format: "date-time", description: "Optional new date for the entry." },
-              dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Optional new day rating (1-10)." },
-              mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Optional new mood." },
-              comments: { type: "string", nullable: true, description: "Optional new comments." }
-          }
-      },
+      // Removed WellbeingInput, WellbeingEntry, WellbeingUpdateInput schemas
+
       "SleepInput": {
         type: "object",
         properties: {
-          // userId is derived from context, not sent in body for creation
           bedtime: { type: "string", format: "date-time", description: "Time user went to bed." },
           wakeUpTime: { type: "string", format: "date-time", description: "Time user woke up." },
           qualityRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of sleep quality (1-10)." },
-          comments: { type: "string", nullable: true, description: "Optional comments on sleep." },
-          durationHours: { type: "number", format: "float", nullable: true, description: "Optional pre-calculated sleep duration in hours." }
+          sleepcomments: { type: "string", nullable: true, description: "Optional comments on sleep." },
+          durationHours: { type: "number", format: "float", nullable: true, description: "Optional pre-calculated sleep duration in hours." },
+          entryDate: { type: "string", format: "date-time", description: "Date of the entry (ISO 8601 format)." },
+          dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of the day from 1 to 10." },
+          mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Optional mood for the day." },
+          daycomments: { type: "string", nullable: true, description: "Optional comments for the day." },
         },
-        required: ["bedtime", "wakeUpTime", "qualityRating"]
+        required: ["bedtime", "wakeUpTime", "qualityRating", "entryDate", "dayRating"]
       },
       "SleepEntry": {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid", description: "Unique ID of the sleep entry." },
-          userId: { type: "string", format: "uuid", nullable: true, description: "ID of the user." }, // Added nullable
+          userId: { type: "string", format: "uuid", nullable: true, description: "ID of the user." },
           bedtime: { type: "string", format: "date-time", description: "Bedtime." },
           wakeUpTime: { type: "string", format: "date-time", description: "Wake up time." },
           qualityRating: { type: "integer", minimum: 1, maximum: 10, description: "Quality rating." },
-          comments: { type: "string", nullable: true, description: "Comments." },
+          sleepcomments: { type: "string", nullable: true, description: "Comments on sleep." },
           durationHours: { type: "number", format: "float", nullable: true, description: "Calculated duration in hours." },
+          entryDate: { type: "string", format: "date-time", description: "Date of the entry." },
+          dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Rating of the day (1-10)." },
+          mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Mood for the day." },
+          daycomments: { type: "string", nullable: true, description: "Comments for the day." },
           createdAt: { type: "string", format: "date-time", description: "Creation timestamp." },
           updatedAt: { type: "string", format: "date-time", description: "Last update timestamp." }
         },
-        required: ["id", "bedtime", "wakeUpTime", "qualityRating", "createdAt", "updatedAt"]
+        required: ["id", "bedtime", "wakeUpTime", "qualityRating", "entryDate", "dayRating", "createdAt", "updatedAt"]
       },
       "SleepUpdateInput": {
         type: "object",
@@ -542,14 +415,18 @@ const apiDefinition = {
             bedtime: { type: "string", format: "date-time", description: "Optional new bedtime." },
             wakeUpTime: { type: "string", format: "date-time", description: "Optional new wake up time." },
             qualityRating: { type: "integer", minimum: 1, maximum: 10, description: "Optional new quality rating (1-10)." },
-            comments: { type: "string", nullable: true, description: "Optional new comments." },
-            durationHours: { type: "number", format: "float", nullable: true, description: "Optional new duration in hours." }
+            sleepcomments: { type: "string", nullable: true, description: "Optional new comments on sleep." },
+            durationHours: { type: "number", format: "float", nullable: true, description: "Optional new duration in hours." },
+            entryDate: { type: "string", format: "date-time", description: "Optional new date for the entry." },
+            dayRating: { type: "integer", minimum: 1, maximum: 10, description: "Optional new day rating (1-10)." },
+            mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Optional new mood." },
+            daycomments: { type: "string", nullable: true, description: "Optional new comments for the day." },
         }
       },
       "SummaryResponse": {
         type: "object",
         properties: {
-          message: { type: "string" }, // Added message property
+          message: { type: "string" },
           summary: {
             type: "object",
             properties: {
@@ -578,12 +455,62 @@ const apiDefinition = {
                 },
                 description: "List of days with the worst sleep quality."
               },
-              averageWellbeingRating: { type: "number", format: "float", nullable: true, description: "Average well-being rating." }
+              averageDayRating: { type: "number", format: "float", nullable: true, description: "Average day rating." }
             },
-            required: ["averageSleepDurationHours", "bestSleepDays", "worstSleepDays", "averageWellbeingRating"]
+            required: ["averageSleepDurationHours", "bestSleepDays", "worstSleepDays", "averageDayRating"]
           }
         },
         required: ["message", "summary"]
+      },
+      "ChartsDataResponse": {
+        type: "object",
+        properties: {
+          moodChartData: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                date: { type: "string", description: "Date for the chart point (e.g., 'Jul 20')." },
+                moodValue: { type: "number", description: "Numeric representation of mood (1-5)." },
+                mood: { "$ref": "#/components/schemas/Mood", nullable: true, description: "Original mood string." }
+              },
+              required: ["date", "moodValue"]
+            },
+            description: "Data for the mood trend chart."
+          },
+          sleepDurationChartData: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                date: { type: "string", description: "Date for the chart point (e.g., 'Sat')." },
+                sleepDuration: { type: "number", format: "float", description: "Sleep duration in hours." }
+              },
+              required: ["date", "sleepDuration"]
+            },
+            description: "Data for the sleep duration chart."
+          },
+          correlationChartData: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                sleepDuration: { type: "number", format: "float", description: "Sleep duration in hours." },
+                dayRating: { type: "integer", description: "Day rating (1-10)." },
+                date: { type: "string", format: "date", description: "Date of the entry (YYYY-MM-DD)." }
+              },
+              required: ["sleepDuration", "dayRating", "date"]
+            },
+            description: "Data for the sleep and day rating correlation chart."
+          },
+          aiCorrelationInsight: { type: "string", description: "AI-generated insight about correlation." },
+        },
+        required: [
+          "moodChartData",
+          "sleepDurationChartData",
+          "correlationChartData",
+          "aiCorrelationInsight",
+        ]
       },
       "ErrorResponse": {
         type: "object",
