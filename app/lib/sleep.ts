@@ -11,7 +11,7 @@ const sleepRouter = new Hono<HonoEnv>();
 
 sleepRouter.use('*', async (c, next) => {
   const user = c.get('user');
-  console.log(user);
+ 
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
@@ -79,7 +79,7 @@ sleepRouter.get(
           userId: CurrentUserID,
         },
       });
-      console.log(rawSleepEntries)
+   
       const validatedSleepEntries: ReceiveDBSleepEntryArray =
         SleepEntryArraySchema.parse(rawSleepEntries);
       return c.json(
@@ -180,7 +180,6 @@ sleepRouter.get("/:id", async (c) => {
       },
     });
 
-    console.log("Data from DB:", GetSingleSleepRoute);
 
     if (GetSingleSleepRoute === null) {
       return c.json({ message: "Sleep entry not found" }, 404);

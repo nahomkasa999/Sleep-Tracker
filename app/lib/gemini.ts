@@ -3,7 +3,6 @@ import { z } from "zod";
 import { SleepEntryReceivingSchemaDBType } from "@/app/lib/insight"; // Corrected import path
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-console.log(process.env.GEMINI_API_KEY)
 
 
 
@@ -16,7 +15,7 @@ async function generateAndValidateInsight(
   const response = await result.response;
   const rawText = response.candidates![0].content.parts[0].text;
 
-  console.log(rawText)
+
 
   if (rawText !== undefined) {
     return rawText.trim(); 

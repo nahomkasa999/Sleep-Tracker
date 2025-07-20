@@ -186,7 +186,7 @@ function AddEntry() {
 
    
       if (filteredSleepData.bedtime && filteredSleepData.wakeUpTime && filteredSleepData.qualityRating) {
-        console.log("Sending Sleep Data:", filteredSleepData);
+        
         const sleepResponse = await fetch("/api/sleep", {
           method: "POST",
           headers: {
@@ -199,13 +199,13 @@ function AddEntry() {
           const errorData = await sleepResponse.json();
           throw new Error(errorData.message || "Failed to create sleep entry.");
         }
-        console.log("Sleep entry created successfully:", await sleepResponse.json());
+        
       } else {
-        console.log("Skipping sleep entry creation. Bedtime, Wake Up Time, and Sleep Quality are required for sleep entry.");
+        throw new Error("Skipping sleep entry creation. Bedtime, Wake Up Time, and Sleep Quality are required for sleep entry.");
       }
 
    
-      console.log("Sending Wellbeing Data:", filteredWellbeingData);
+      
       const wellbeingResponse = await fetch("/api/wellbeing", {
         method: "POST",
         headers: {
@@ -218,7 +218,7 @@ function AddEntry() {
         const errorData = await wellbeingResponse.json();
         throw new Error(errorData.message || "Failed to create wellbeing entry.");
       }
-      console.log("Wellbeing entry created successfully:", await wellbeingResponse.json());
+    
 
       setIsOpen(false);
       reset();

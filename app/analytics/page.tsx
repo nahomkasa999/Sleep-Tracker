@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 // Import the new ChartsDataResponse type
 import { ChartsDataResponse, ChartsDataResponseSchema } from "@/app/lib/insight"; // Adjust path as needed
 import { z } from "zod"; // Import z for z.infer
+import { AnalyticsLoadingSkeleton } from "@/components/skeleton/AnalyticsLoadingSkeleton";
 
 // Define Mood enum if not already globally available or imported
 enum Mood {
@@ -238,15 +239,13 @@ function Page() {
     correlationChartData = [],
     aiCorrelationInsight = "Loading correlation insight...",
   } = chartsData || {};
-
+  
+  if(isLoading){
+    return <AnalyticsLoadingSkeleton/>
+  }
 
   return (
     <div className="space-y-5 flex flex-col justify-center p-4 relative min-h-screen"> {/* Added relative and min-h-screen */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
-        </div>
-      )}
       <div className="grid gap-0 grid-cols-1">
         <div className="col-span-6 flex items-center justify-between">
           <div>

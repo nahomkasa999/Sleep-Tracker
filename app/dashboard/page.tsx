@@ -37,6 +37,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 // Import types from your insights route and utility
 import { SleepEntryReceivingSchemaDBType, SleepInsightsResponse } from "@/app/lib/insight";
 import { CorrelationResponse } from "@/app/lib/utllity";
+import DashboardLoadingSkeleton from "@/components/skeleton/DashboardLoadingSkeleton";
 
 // Define JournalEntry based on SleepEntryReceivingSchemaDBType (single entry)
 export type JournalEntry = SleepEntryReceivingSchemaDBType[number];
@@ -192,7 +193,7 @@ function Page() {
 
   if (isLoading) {
     return (
-      <div className="p-4 text-white text-center">Loading dashboard data...</div>
+      <DashboardLoadingSkeleton/>
     );
   }
 

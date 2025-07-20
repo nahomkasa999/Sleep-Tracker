@@ -22,9 +22,6 @@ export function BottomNav() {
   const pathname = usePathname();
   const { isOpen, setIsOpen } = usePopupContext();
 
-  useEffect(() => {
-    console.log(isOpen + " is the value")
-  }, [isOpen])
 
   return (
     <TooltipProvider>
