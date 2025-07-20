@@ -1,317 +1,302 @@
-"use client";
-
-import React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler, Controller } from "react-hook-form"; // Added Controller
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Added Input
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Added Textarea
+"use client"
+import { useState, useEffect } from 'react';
+import { z } from 'zod';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"; // Added Select components
-import {
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatDateTimeLocal, formatDateOnly } from '@/components/EditEntries/EditEntries'; // Reusing helpers
 
-import {
-  TypeOfDataFromFrontEnd,
-  SingleSleepRouteEntry,
-  CreateSleepEntryInput,
-} from "@/app/lib/wellbeing"; // Assuming these types are correctly defined in your files
+const moodOptions = ['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired'];
 
-import { useSession } from "@/app/lib/auth-client";
-
-// Define Mood enum if not already globally available or imported
-enum Mood {
-  Happy = "Happy",
-  Stressed = "Stressed",
-  Neutral = "Neutral",
-  Sad = "Sad",
-  Excited = "Excited",
-  Tired = "Tired",
-}
-
-// Zod schema for form validation
-const formSchema = z.object({
-  bedtime: z.string().min(1, 'Bedtime is required'),
-  wakeUpTime: z.string().min(1, 'Wake up time is required'),
-  qualityRating: z.coerce.number().min(1, 'Quality rating must be at least 1').max(10, 'Quality rating cannot exceed 10'),
-  sleepComments: z.string().optional(),
-  entryDate: z.string().min(1, 'Entry date is required'),
-  dayRating: z.coerce.number().min(1, 'Day rating must be at least 1').max(10, 'Day rating cannot exceed 10'),
-  mood: z.nativeEnum(Mood, {
-    errorMap: () => ({ message: 'Please select a valid mood' }),
-  }),
-  dayComments: z.string().optional(),
+// Schema for creating a new entry (all required fields as per backend POST /sleep)
+const createEntrySchema = z.object({
+  bedtime: z.string().min(1, "Bedtime is required"),
+  wakeUpTime: z.string().min(1, "Wake up time is required"),
+  qualityRating: z.number().min(1).max(10, "Sleep quality must be between 1 and 10"),
+  sleepcomments: z.string().nullable().optional(),
+  durationHours: z.number().nullable().optional(), // Will be calculated
+  entryDate: z.string().min(1, "Entry date is required"),
+  dayRating: z.number().min(1).max(10, "Day rating must be between 1 and 10"),
+  mood: z.enum(['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired']).nullable().optional(),
+  daycomments: z.string().nullable().optional(),
 });
 
-type FormInputs = z.infer<typeof formSchema>;
+export type CreateEntryForm = z.infer<typeof createEntrySchema>;
 
-function AddEntry() {
-  const queryClient = useQueryClient();
-  const { data: session, isPending } = useSession();
+type CreateEntryDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onSave: (data: CreateEntryForm) => Promise<void>;
+};
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    control, // Added control for Controller
-  } = useForm<FormInputs>({
-    resolver: zodResolver(formSchema),
+export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryDialogProps) {
+  const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<CreateEntryForm>({
+    resolver: zodResolver(createEntrySchema),
     defaultValues: {
-      // Set default values for date/time fields to current for convenience
-      // Format for datetime-local: YYYY-MM-DDTHH:MM
-      bedtime: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString().substring(0, 16),
-      wakeUpTime: new Date().toISOString().substring(0, 16),
-      // Format for date: YYYY-MM-DD
-      entryDate: new Date().toISOString().substring(0, 10),
-      qualityRating: 7,
-      dayRating: 7,
-      mood: Mood.Neutral,
-      sleepComments: '',
-      dayComments: '',
+      entryDate: formatDateOnly(new Date()), // Default to today's date
+      bedtime: formatDateTimeLocal(new Date()), // Default to current time
+      wakeUpTime: formatDateTimeLocal(new Date()), // Default to current time
+      qualityRating: 5,
+      sleepcomments: '',
+      durationHours: 0,
+      dayRating: 5,
+      mood: 'Neutral',
+      daycomments: '',
     },
   });
 
-  // Mutation for creating a Sleep Entry
-  const createSleepMutation = useMutation<
-    SingleSleepRouteEntry,
-    Error,
-    CreateSleepEntryInput
-  >({
-    mutationFn: async (newSleepEntryData: CreateSleepEntryInput) => {
-      console.log('Sending sleep data:', newSleepEntryData);
-      const response = await fetch('/api/sleep', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newSleepEntryData),
-      });
+  const watchedBedtime = watch('bedtime');
+  const watchedWakeUpTime = watch('wakeUpTime');
+  const watchedDayRating = watch('dayRating');
+  const watchedQualityRating = watch('qualityRating');
+  const watchedDuration = watch('durationHours');
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create sleep entry');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sleepEntries'] });
-      queryClient.invalidateQueries({ queryKey: ['insights'] });
-      console.log('Successfully created sleep entry!');
-    },
-    onError: (error) => {
-      console.error('Error creating sleep entry:', error.message);
-    },
-  });
-
-  // Mutation for creating a Wellbeing Entry
-  const createWellbeingMutation = useMutation<
-    TypeOfDataFromFrontEnd, // Assuming this is the correct response type for wellbeing POST
-    Error,
-    TypeOfDataFromFrontEnd
-  >({
-    mutationFn: async (newWellbeingEntryData: TypeOfDataFromFrontEnd) => {
-      console.log('Sending wellbeing data:', newWellbeingEntryData);
-      const response = await fetch('/api/wellbeing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newWellbeingEntryData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create wellbeing entry');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wellbeingEntries'] });
-      queryClient.invalidateQueries({ queryKey: ['insights'] });
-      console.log('Successfully created wellbeing entry!');
-    },
-    onError: (error) => {
-      console.error('Error creating wellbeing entry:', error.message);
-    },
-  });
-
-  // Handler for form submission
-  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    if (isPending || !session?.user.id) {
-      console.error('Session not ready or user ID not available.');
-      return;
+  // Calculate duration on time change
+  useEffect(() => {
+    if (watchedBedtime && watchedWakeUpTime) {
+      const bed = new Date(watchedBedtime);
+      const wake = new Date(watchedWakeUpTime);
+      let diffMs = wake.getTime() - bed.getTime();
+      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // Add 24 hours if wakeUpTime is on next day
+      setValue('durationHours', parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
     }
+  }, [watchedBedtime, watchedWakeUpTime, setValue]);
 
-    const userId = session.user.id;
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        entryDate: formatDateOnly(new Date()),
+        bedtime: formatDateTimeLocal(new Date()),
+        wakeUpTime: formatDateTimeLocal(new Date()),
+        qualityRating: 5,
+        sleepcomments: '',
+        durationHours: 0,
+        dayRating: 5,
+        mood: 'Neutral',
+        daycomments: '',
+      });
+    }
+  }, [isOpen, reset]);
 
-    // Prepare data for sleep entry mutation
-    const sleepEntryData: CreateSleepEntryInput = {
-      userId: userId,
+  const onSubmit = async (data: CreateEntryForm) => {
+    // Convert date strings back to ISO format for backend
+    const payload = {
+      ...data,
       bedtime: new Date(data.bedtime).toISOString(),
       wakeUpTime: new Date(data.wakeUpTime).toISOString(),
-      qualityRating: data.qualityRating,
-      comments: data.sleepComments || '',
-    };
-
-    // Prepare data for wellbeing entry mutation
-    const wellbeingEntryData: TypeOfDataFromFrontEnd = {
       entryDate: new Date(data.entryDate).toISOString(),
-      dayRating: data.dayRating,
-      mood: data.mood,
-      comments: data.dayComments || '',
+      // Ensure comments are null if empty string
+      sleepcomments: data.sleepcomments === '' ? null : data.sleepcomments,
+      daycomments: data.daycomments === '' ? null : data.daycomments,
+      // Ensure mood is null if 'Neutral' (or other default you choose to represent null)
+      mood: data.mood === 'Neutral' ? null : data.mood,
     };
-
-    try {
-      await Promise.all([
-        createSleepMutation.mutateAsync(sleepEntryData),
-        createWellbeingMutation.mutateAsync(wellbeingEntryData),
-      ]);
-      console.log('Successfully created both sleep and wellbeing entries!');
-      reset(); // Reset form fields after successful submission
-    } catch (error) {
-      console.error('Error creating combined entries:', error);
-      // Errors from individual mutations are already handled by their onError callbacks
-    }
+    await onSave(payload);
+    onOpenChange(false);
   };
 
-  const isSubmitting = createSleepMutation.isPending || createWellbeingMutation.isPending || isPending;
-
   return (
-    <div className="p-6 max-w-lg mx-auto bg-gray-100 rounded-lg shadow-md font-sans">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add Daily Entries</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Sleep Entry Fields */}
-        <fieldset className="border border-gray-300 p-4 rounded-md shadow-sm bg-white">
-          <legend className="text-lg font-semibold text-gray-700 px-2">Sleep Details</legend>
-          <div>
-            <Label htmlFor="bedtime" className="block text-sm font-medium text-gray-700 mb-1">Bedtime</Label>
-            <Input
-              id="bedtime"
-              type="datetime-local"
-              {...register('bedtime')}
-              className="mt-1 block w-full" // Tailwind classes for shadcn Input
-            />
-            {errors.bedtime && <p className="mt-1 text-sm text-red-600">{errors.bedtime.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="wakeUpTime" className="block text-sm font-medium text-gray-700 mb-1">Wake Up Time</Label>
-            <Input
-              id="wakeUpTime"
-              type="datetime-local"
-              {...register('wakeUpTime')}
-              className="mt-1 block w-full"
-            />
-            {errors.wakeUpTime && <p className="mt-1 text-sm text-red-600">{errors.wakeUpTime.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="qualityRating" className="block text-sm font-medium text-gray-700 mb-1">Sleep Quality Rating (1-10)</Label>
-            <Input
-              id="qualityRating"
-              type="number"
-              {...register('qualityRating')}
-              className="mt-1 block w-full"
-            />
-            {errors.qualityRating && <p className="mt-1 text-sm text-red-600">{errors.qualityRating.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="sleepComments" className="block text-sm font-medium text-gray-700 mb-1">Sleep Comments</Label>
-            <Textarea
-              id="sleepComments"
-              {...register('sleepComments')}
-              rows={3}
-              className="mt-1 block w-full"
-            ></Textarea>
-            {errors.sleepComments && <p className="mt-1 text-sm text-red-600">{errors.sleepComments.message}</p>}
-          </div>
-        </fieldset>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] border-2 border-border bg-background text-foreground rounded-lg shadow-xl p-6">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-3xl font-bold text-white">New Entry</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              Add your daily sleep and well-being details.
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Wellbeing Entry Fields */}
-        <fieldset className="border border-gray-300 p-4 rounded-md shadow-sm bg-white">
-          <legend className="text-lg font-semibold text-gray-700 px-2">Wellbeing Details</legend>
-          <div>
-            <Label htmlFor="entryDate" className="block text-sm font-medium text-gray-700 mb-1">Entry Date</Label>
-            <Input
-              id="entryDate"
-              type="date"
-              {...register('entryDate')}
-              className="mt-1 block w-full"
-            />
-            {errors.entryDate && <p className="mt-1 text-sm text-red-600">{errors.entryDate.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="dayRating" className="block text-sm font-medium text-gray-700 mb-1">Day Rating (1-10)</Label>
-            <Input
-              id="dayRating"
-              type="number"
-              {...register('dayRating')}
-              className="mt-1 block w-full"
-            />
-            {errors.dayRating && <p className="mt-1 text-sm text-red-600">{errors.dayRating.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="mood" className="block text-sm font-medium text-gray-700 mb-1">Mood</Label>
-            <Controller
-              name="mood"
-              control={control}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Mood" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(Mood).map((moodOption) => (
-                      <SelectItem key={moodOption} value={moodOption}>
-                        {moodOption}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.mood && <p className="mt-1 text-sm text-red-600">{errors.mood.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="dayComments" className="block text-sm font-medium text-gray-700 mb-1">Day Comments</Label>
-            <Textarea
-              id="dayComments"
-              {...register('dayComments')}
-              rows={3}
-              className="mt-1 block w-full"
-            ></Textarea>
-            {errors.dayComments && <p className="mt-1 text-sm text-red-600">{errors.dayComments.message}</p>}
-          </div>
-        </fieldset>
+          <div className="grid gap-6 py-4">
+            {/* Date */}
+            <div className="space-y-2">
+              <Label htmlFor="entryDate" className="text-white">Date</Label>
+              <Controller
+                name="entryDate"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="entryDate"
+                    type="date"
+                    {...field}
+                    value={field.value}
+                    className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary"
+                  />
+                )}
+              />
+              {errors.entryDate && <p className="text-red-500 text-sm">{errors.entryDate.message}</p>}
+            </div>
 
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Adding Entries...' : 'Add Both Entries'}
-        </Button>
+            {/* Bedtime & WakeUpTime */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bedtime" className="text-white">Went to Sleep</Label>
+                <Controller
+                  name="bedtime"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="bedtime"
+                      type="datetime-local"
+                      {...field}
+                      value={field.value}
+                      className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary"
+                    />
+                  )}
+                />
+                {errors.bedtime && <p className="text-red-500 text-sm">{errors.bedtime.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wakeUpTime" className="text-white">Woke Up</Label>
+                <Controller
+                  name="wakeUpTime"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="wakeUpTime"
+                      type="datetime-local"
+                      {...field}
+                      value={field.value}
+                      className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary"
+                    />
+                  )}
+                />
+                {errors.wakeUpTime && <p className="text-red-500 text-sm">{errors.wakeUpTime.message}</p>}
+              </div>
+            </div>
 
-        {/* Error Messages */}
-        {(createSleepMutation.isError || createWellbeingMutation.isError) && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-            {createSleepMutation.isError && <div>Error adding sleep: {createSleepMutation.error?.message}</div>}
-            {createWellbeingMutation.isError && <div>Error adding wellbeing: {createWellbeingMutation.error?.message}</div>}
+            {/* Sleep Duration */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground bg-card p-3 rounded-md border border-border">
+              <Label className="text-white">Calculated Sleep Duration:</Label>
+              <span className="font-semibold text-primary">{watchedDuration ? watchedDuration.toFixed(2) : '--'} hours</span>
+            </div>
+
+            {/* Sleep Quality */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-white">Sleep Quality</Label>
+                <span className="text-sm text-muted-foreground">{watchedQualityRating}/10</span>
+              </div>
+              <Controller
+                name="qualityRating"
+                control={control}
+                render={({ field }) => (
+                  <Slider
+                    value={[field.value]}
+                    onValueChange={(value) => field.onChange(value[0])}
+                    min={1}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                    trackClassName="bg-muted-foreground/30 h-2 rounded-full"
+                    rangeClassName="bg-primary h-2 rounded-full"
+                    thumbClassName="h-5 w-5 bg-primary border border-primary-foreground rounded-full shadow-md transition-transform duration-100 hover:scale-110"
+                  />
+                )}
+              />
+              {errors.qualityRating && <p className="text-red-500 text-sm">{errors.qualityRating.message}</p>}
+            </div>
+
+            {/* Sleep Comments */}
+            <div className="space-y-2">
+              <Label htmlFor="sleepcomments" className="text-white">Sleep Notes</Label>
+              <Controller
+                name="sleepcomments"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    id="sleepcomments"
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="How was your sleep?"
+                    className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary min-h-[80px]"
+                  />
+                )}
+              />
+            </div>
+
+            {/* Mood */}
+            <div className="space-y-2 w-full">
+              <Label htmlFor="mood" className="text-white">Mood</Label>
+              <Controller
+                name="mood"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value ?? 'Neutral'}>
+                    <SelectTrigger className="w-full bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary">
+                      <SelectValue placeholder="Select your mood" />
+                    </SelectTrigger>
+                    <SelectContent className='w-full bg-card text-foreground border-border rounded-md'>
+                      {moodOptions.map((mood) => (
+                        <SelectItem key={mood} value={mood} className="capitalize">
+                          {mood}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {/* Day Rating */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-white">Day Rating</Label>
+                <span className="text-sm text-muted-foreground">{watchedDayRating}/10</span>
+              </div>
+              <Controller
+                name="dayRating"
+                control={control}
+                render={({ field }) => (
+                  <Slider
+                    value={[field.value]}
+                    onValueChange={(value) => field.onChange(value[0])}
+                    min={1}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                    trackClassName="bg-muted-foreground/30 h-2 rounded-full"
+                    rangeClassName="bg-primary h-2 rounded-full"
+                    thumbClassName="h-5 w-5 bg-primary border border-primary-foreground rounded-full shadow-md transition-transform duration-100 hover:scale-110"
+                  />
+                )}
+              />
+              {errors.dayRating && <p className="text-red-500 text-sm">{errors.dayRating.message}</p>}
+            </div>
+
+            {/* Day Comments */}
+            <div className="space-y-2">
+              <Label htmlFor="daycomments" className="text-white">Day Notes</Label>
+              <Controller
+                name="daycomments"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    id="daycomments"
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="Any thoughts or events to note?"
+                    className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary min-h-[80px]"
+                  />
+                )}
+              />
+            </div>
           </div>
-        )}
-      </form>
-    </div>
+
+          <DialogFooter className="mt-6 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-foreground hover:bg-accent">Cancel</Button>
+            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Save Entry</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
-
-export default AddEntry;

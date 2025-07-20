@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -31,97 +30,109 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { toast } from "sonner";
-import { EditEntryDialog } from "@/components/EditEntries/EditEntries";
+// Import the formatting helpers directly from the EditEntryDialog component file
+import { EditEntryDialog, formatDateTimeLocal, formatDateOnly } from "@/components/EditEntries/EditEntries";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getSleepEntry,
-  getWellbeing,
-  deleteSingleSleepEntry,
-  deleteSingleWellbeingEntry,
-} from "@/components/FetchingData";
 
-export const journalEntrySchema = z.object({
-  id: z.string(),
-  date: z.string(),
-  sleepTime: z.string().optional(),
-  wakeTime: z.string().optional(),
-  sleepDuration: z.number(), // in hours
-  mood: z.string(), // "happy", "stressed", "excited", "neutral", "sad"
-  dayRating: z.number(), // 1-10 scale
-  sleepNotes: z.string().optional(),
-  dayNotes: z.string().optional(),
-});
+// Import types from your insights route and utility
+import { SleepEntryReceivingSchemaDBType, SleepInsightsResponse } from "@/app/lib/insight";
+import { CorrelationResponse } from "@/app/lib/utllity";
 
-export type JournalEntry = z.infer<typeof journalEntrySchema>;
+// Define JournalEntry based on SleepEntryReceivingSchemaDBType (single entry)
+export type JournalEntry = SleepEntryReceivingSchemaDBType[number];
 
-const metrics = [
-  {
-    title: "Avg. Sleep",
-    value: `6.7h`,
-    icon: Moon,
-  },
-  {
-    title: "Avg. Mood",
-    value: "Neutral",
-    icon: Smile,
-  },
-  {
-    title: "Avg. Day Rating",
-    value: `4.9/10`,
-    icon: Star,
-  },
-];
+// Define the type for the data expected by the EditEntryDialog
+export type EditEntryFormType = {
+  id: string;
+  entryDate: string; // YYYY-MM-DD
+  bedtime: string; // YYYY-MM-DDTHH:MM
+  wakeUpTime: string; // YYYY-MM-DDTHH:MM
+  qualityRating: number;
+  sleepComments?: string | null; // Matches backend 'sleepcomments'
+  durationHours?: number | null;
+  dayRating: number;
+  mood?: 'Happy' | 'Stressed' | 'Neutral' | 'Sad' | 'Excited' | 'Tired' | null;
+  dayComments?: string | null; // Matches backend 'daycomments'
+};
+
 
 function Page() {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  // Fetch AI Correlation Insight
+  const { data: aiCorrelationInsight, isLoading: isAICorrelationLoading, isError: isAICorrelationError } = useQuery<{ insight: string }>({
+    queryKey: ['aiCorrelationInsightDashboard'],
+    queryFn: async () => {
+      const response = await fetch(`/api/insights/AI/correlation?period=all`); // Fetch weekly insight for dashboard
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch AI correlation insight');
+      }
+      return response.json();
+    },
+  });
+
+  // Fetch Summary Data
+  const { data: summaryData, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery<SleepInsightsResponse>({
+    queryKey: ['summaryDataDashboard'],
+    queryFn: async () => {
+      const response = await fetch(`/api/insights/summary?period=all`); // Fetch weekly summary
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch summary data');
+      }
+      return response.json();
+    },
+  });
+
+  // Fetch All Sleep Entries for the table
+  const { data: allSleepEntries, isLoading: isEntriesLoading, isError: isEntriesError } = useQuery<SleepEntryReceivingSchemaDBType>({
+    queryKey: ['allSleepEntriesDashboard'],
+    queryFn: async () => {
+      const response = await fetch(`/api/sleep`); // Fetch all sleep entries
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch sleep entries');
+      }
+      return (await response.json()).data; // Assuming data is nested under 'data'
+    },
+  });
+
   // Mutation for editing an entry
   const editEntryMutation = useMutation({
-    mutationFn: async (data: any) => {
+    // Corrected data type to Partial<EditEntryFormType> & { id: string }
+    mutationFn: async (data: Partial<EditEntryFormType> & { id: string }) => {
       const entryId = data.id;
+      // Remove id from the payload as it's in the URL
+      const { id, ...payload } = data;
 
-      // Perform both API calls in parallel
-      const [sleepResponse, wellbeingResponse] = await Promise.all([
-        fetch(`/api/sleep/${entryId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bedtime: new Date(data.bedtime).toISOString(),
-            wakeUpTime: new Date(data.wakeUpTime).toISOString(),
-            qualityRating: data.qualityRating,
-            comments: data.sleepComments,
-            durationHours: data.durationHours,
-          }),
-        }),
-        fetch(`/api/wellbeing/${entryId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            entryDate: new Date(data.entryDate).toISOString(),
-            dayRating: data.dayRating,
-            mood: data.mood,
-            comments: data.dayComments,
-          }),
-        }),
-      ]);
+      // Convert date strings back to ISO format if they are present in the partial update
+      if (payload.bedtime) payload.bedtime = new Date(payload.bedtime).toISOString();
+      if (payload.wakeUpTime) payload.wakeUpTime = new Date(payload.wakeUpTime).toISOString();
+      if (payload.entryDate) payload.entryDate = new Date(payload.entryDate).toISOString();
 
-      if (!sleepResponse.ok || !wellbeingResponse.ok) {
-        // If either request fails, throw an error to trigger onError
-        const errorData = !sleepResponse.ok
-          ? await sleepResponse.json()
-          : await wellbeingResponse.json();
+
+      const response = await fetch(`/api/sleep/${entryId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload), // Send only the changed fields
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
         throw new Error(errorData?.message || "Failed to update entry");
       }
 
-      return Promise.all([sleepResponse.json(), wellbeingResponse.json()]);
+      return response.json();
     },
     onSuccess: () => {
       toast.success("Entry updated successfully!");
-      // Invalidate queries to trigger a refetch and update the table
-      queryClient.invalidateQueries({ queryKey: ["sleepEntries"] });
-      queryClient.invalidateQueries({ queryKey: ["wellbeingEntries"] });
+      // Invalidate queries to trigger a refetch and update the table/insights
+      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
       setEditDialogOpen(false); // Close the dialog
     },
     onError: (error: any) => {
@@ -132,16 +143,20 @@ function Page() {
   // Mutation for deleting an entry
   const deleteEntryMutation = useMutation({
     mutationFn: async (entryId: string) => {
-      await Promise.all([
-        deleteSingleSleepEntry(entryId),
-        deleteSingleWellbeingEntry(entryId),
-      ]);
-      return entryId;
+      const response = await fetch(`/api/sleep/${entryId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.message || "Failed to delete entry");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast.success("Entry deleted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["sleepEntries"] });
-      queryClient.invalidateQueries({ queryKey: ["wellbeingEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
     },
     onError: (error: any) => {
       toast.error(
@@ -150,83 +165,80 @@ function Page() {
     },
   });
 
-  // Fetch sleep entries
-  const {
-    data: sleepData,
-    isLoading: sleepLoading,
-    isError: sleepError,
-  } = useQuery({
-    queryKey: ["sleepEntries"],
-    queryFn: getSleepEntry,
-  });
+  const entries: JournalEntry[] = allSleepEntries || [];
 
-  // Fetch wellbeing entries
-  const {
-    data: wellbeingData,
-    isLoading: wellbeingLoading,
-    isError: wellbeingError,
-  } = useQuery({
-    queryKey: ["wellbeingEntries"],
-    queryFn: getWellbeing,
-  });
-
-  // Map sleep and wellbeing data to JournalEntry[]
-  const sleepEntries = sleepData?.data || [];
-  const wellbeingEntries = wellbeingData?.data || [];
-
-  function findWellbeingForSleep(sleepEntry: any) {
-    const sleepDate = new Date(sleepEntry.bedtime).toISOString().slice(0, 10);
-    return wellbeingEntries.find((w: any) => {
-      const wDate = new Date(w.entryDate).toISOString().slice(0, 10);
-      return wDate === sleepDate;
-    });
-  }
-
-  const entries: JournalEntry[] = sleepEntries.map((sleepEntry: any) => {
-    const wellbeing = findWellbeingForSleep(sleepEntry);
-    const bedtime = new Date(sleepEntry.bedtime);
-    const wakeUpTime = new Date(sleepEntry.wakeUpTime);
-    return {
-      id: sleepEntry.id,
-      date: bedtime.toISOString(),
-      sleepTime: bedtime.toISOString().split("T")[1]?.slice(0, 5),
-      wakeTime: wakeUpTime.toISOString().split("T")[1]?.slice(0, 5),
-      sleepDuration: sleepEntry.durationHours ?? 0,
-      mood: wellbeing?.mood?.toLowerCase() || "neutral",
-      dayRating: wellbeing?.dayRating ?? 5,
-      sleepNotes: sleepEntry.comments || "",
-      dayNotes: wellbeing?.comments || "",
-    };
-  });
-
-  function getQualityRating(entry: JournalEntry) {
-    return typeof (entry as any).qualityRating === "number"
-      ? (entry as any).qualityRating
-      : 5;
-  }
-
-  function toEditEntryForm(entry: JournalEntry) {
+  // Modified to use the formatting helpers for consistent input to EditEntryDialog
+  function toEditEntryForm(entry: JournalEntry): EditEntryFormType {
     return {
       id: entry.id,
-      entryDate: entry.date,
-      bedtime: entry.sleepTime
-        ? entry.date.split("T")[0] + "T" + entry.sleepTime
-        : entry.date,
-      wakeUpTime: entry.wakeTime
-        ? entry.date.split("T")[0] + "T" + entry.wakeTime
-        : entry.date,
-      qualityRating: getQualityRating(entry),
-      sleepComments: entry.sleepNotes ?? "",
-      durationHours: entry.sleepDuration,
+      entryDate: formatDateOnly(entry.entryDate), // Format for date input
+      bedtime: formatDateTimeLocal(entry.bedtime), // Format for datetime-local
+      wakeUpTime: formatDateTimeLocal(entry.wakeUpTime), // Format for datetime-local
+      qualityRating: entry.qualityRating,
+      sleepComments: entry.sleepcomments ?? null,
+      durationHours: entry.durationHours ?? null,
       dayRating: entry.dayRating,
-      mood: entry.mood,
-      dayComments: entry.dayNotes ?? "",
+      mood: entry.mood ?? null,
+      dayComments: entry.daycomments ?? null,
     };
   }
 
   async function handleDelete(entryId: string) {
     deleteEntryMutation.mutate(entryId);
   }
+
+  const isLoading = isAICorrelationLoading || isSummaryLoading || isEntriesLoading;
+  const isError = isAICorrelationError || isSummaryError || isEntriesError;
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-white text-center">Loading dashboard data...</div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-red-500 text-center">
+        Error loading dashboard:
+        {isAICorrelationError && <p>{aiCorrelationInsight?.insight || "AI Correlation Error"}</p>}
+        {isSummaryError && <p>{summaryData?.message || "Summary Data Error"}</p>}
+        {isEntriesError && <p>{allSleepEntries?.message || "Sleep Entries Error"}</p>}
+      </div>
+    );
+  }
+
+  // Prepare metrics data
+  const avgSleep = summaryData?.summary?.averageSleepDurationHours !== null && summaryData?.summary?.averageSleepDurationHours !== undefined
+    ? `${summaryData.summary.averageSleepDurationHours.toFixed(1)}h`
+    : 'N/A';
+
+  const avgDayRating = summaryData?.summary?.averageDayRating !== null && summaryData?.summary?.averageDayRating !== undefined
+    ? `${summaryData.summary.averageDayRating.toFixed(1)}/10`
+    : 'N/A';
+
+  // For average mood, since the summary endpoint doesn't provide it,
+  // you might need to calculate it from `allSleepEntries` if you want a true average.
+  // For now, keeping it static or a placeholder.
+  const avgMood = "N/A"; // Or implement logic to find most frequent mood from `entries`
+
+  const dashboardMetrics = [
+    {
+      title: "Avg. Sleep",
+      value: avgSleep,
+      icon: Moon,
+    },
+    {
+      title: "Avg. Mood",
+      value: avgMood, // Placeholder or calculated from entries
+      icon: Smile,
+    },
+    {
+      title: "Avg. Day Rating",
+      value: avgDayRating,
+      icon: Star,
+    },
+  ];
+
 
   return (
     <div className="space-y-5 flex flex-col justify-center p-4">
@@ -237,7 +249,7 @@ function Page() {
           An overview of your sleep and wellbeing.
         </p>
       </div>
-      {/*Alert*/}
+      {/*Alert for AI Correlation Insight*/}
       <Alert className="flex flex-col space-y-3 p-4 w-full border-2 border-border">
         <ClockFading />
         <div className="space-y-1">
@@ -245,22 +257,19 @@ function Page() {
             This Week's Insight
           </AlertTitle>
           <AlertDescription className="text-xs md:text-sm text-foreground">
-            The user has recently experienced variable sleep patterns with a
-            tendency towards shorter sleep durations, and primarily negative
-            moods. However, the most recent entry shows improved mood and day
-            rating, coinciding with a longer sleep duration the night before.
+            {aiCorrelationInsight?.insight || "Loading AI insight..."}
           </AlertDescription>
         </div>
       </Alert>
 
-      {/* the overview */}
+      {/* the overview metrics */}
       <div>
         <div className="grid gap-4 grid-cols-2 grid-rows  md:grid-cols-3">
-          {metrics.map((metric, index) => (
+          {dashboardMetrics.map((metric, index) => (
             <Card
               key={metric.title}
               className={`${
-                index === metrics.length - 1 && metrics.length % 2 !== 0
+                index === dashboardMetrics.length - 1 && dashboardMetrics.length % 2 !== 0
                   ? "col-span-2 md:col-auto"
                   : ""
               } gap-2 border-2 border-border`}
@@ -281,9 +290,9 @@ function Page() {
 
       {/* the recent table */}
       <div>
-        {sleepLoading || wellbeingLoading ? (
+        {isEntriesLoading ? (
           <div className="text-center py-8">Loading entries...</div>
-        ) : sleepError || wellbeingError ? (
+        ) : isEntriesError ? (
           <div className="text-center py-8 text-red-500">
             Error loading entries.
           </div>
@@ -323,25 +332,28 @@ function Page() {
                       className="cursor-pointer, border-b-2 border-border"
                     >
                       <TableCell>
-                        {new Date(entry.date).toLocaleDateString()}
+                        {new Date(entry.entryDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="px-6 py-2">
-                        {entry.sleepDuration.toFixed(1)}h
+                        {entry.durationHours !== null && entry.durationHours !== undefined
+                          ? entry.durationHours.toFixed(1)
+                          : parseFloat(((entry.wakeUpTime.getTime() - entry.bedtime.getTime()) / (1000 * 60 * 60)).toFixed(1))
+                        }h
                       </TableCell>
                       <TableCell className="px-6 py-2">
                         <Badge variant="secondary" className="capitalize">
-                          {entry.mood}
+                          {entry.mood?.toLowerCase() || "neutral"}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-15 py-2">
-                        {entry.sleepNotes ? (
+                        {entry.sleepcomments ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <FileText className="h-5 w-5 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p className="max-w-xs">{entry.sleepNotes}</p>
+                                <p className="max-w-xs">{entry.sleepcomments}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -350,14 +362,14 @@ function Page() {
                         )}
                       </TableCell>
                       <TableCell className="px-15 py-2">
-                        {entry.dayNotes ? (
+                        {entry.daycomments ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <FileText className="h-5 w-5 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p className="max-w-xs">{entry.dayNotes}</p>
+                                <p className="max-w-xs">{entry.daycomments}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -390,10 +402,12 @@ function Page() {
         {/* Edit Entry Dialog */}
         {editingEntry && (
           <EditEntryDialog
-            entry={toEditEntryForm(editingEntry)}
+            entry={toEditEntryForm(editingEntry)} // Pass the correctly formatted entry
             isOpen={editDialogOpen}
             onOpenChange={setEditDialogOpen}
-            onSave={async (data) => { await editEntryMutation.mutateAsync(data); }}
+            onSave={async (data) => {
+              await editEntryMutation.mutateAsync(data as Partial<EditEntryFormType> & { id: string });
+            }}
           />
         )}
       </div>

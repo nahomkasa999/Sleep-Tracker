@@ -19,75 +19,234 @@ import {
 } from "@/components/ui/chart"
 import { Scatter, ScatterChart, Bar, BarChart, CartesianGrid, XAxis, Line, LineChart, YAxis,ZAxis } from 'recharts';
 import { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
 
-export const description = "A bar chart"
+// Import the new ChartsDataResponse type
+import { ChartsDataResponse, ChartsDataResponseSchema } from "@/app/lib/insight"; // Adjust path as needed
+import { z } from "zod"; // Import z for z.infer
 
-const chartData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
-]
+// Define Mood enum if not already globally available or imported
+enum Mood {
+  Happy = "Happy",
+  Stressed = "Stressed",
+  Neutral = "Neutral",
+  Sad = "Sad",
+  Excited = "Excited",
+  Tired = "Tired",
+}
 
-const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--chart-1)",
+// MoodChart Component
+type MoodChartProps = {
+  entries: z.infer<typeof ChartsDataResponseSchema>['moodChartData'];
+};
+
+const moodToValue = {
+    'Happy': 5,
+    'Excited': 4,
+    'Neutral': 3,
+    'Tired': 2,
+    'Stressed': 2,
+    'Sad': 1,
+}
+
+const moodChartConfig = {
+  mood: {
+    label: 'Mood',
+    color: 'hsl(var(--chart-1))',
   },
-} satisfies ChartConfig
-const entries = [
-  { sleepDuration: 5, dayRating: 3 },
-  { sleepDuration: 6, dayRating: 5 },
-  { sleepDuration: 6.5, dayRating: 6 },
-  { sleepDuration: 7, dayRating: 8 },
-  { sleepDuration: 7.5, dayRating: 9 },
-  { sleepDuration: 8, dayRating: 8.5 },
-  { sleepDuration: 8.5, dayRating: 7 },
-  { sleepDuration: 9, dayRating: 6 },
-  { sleepDuration: 5.5, dayRating: 4 },
-  { sleepDuration: 6.8, dayRating: 7.5 },
-  { sleepDuration: 7.2, dayRating: 9.5 },
-  { sleepDuration: 7.8, dayRating: 8 },
-  { sleepDuration: 9.2, dayRating: 5 },
-  { sleepDuration: 4.5, dayRating: 2 },
-  { sleepDuration: 8.2, dayRating: 7.8 },
-  { sleepDuration: 6.2, dayRating: 6.5 },
-  { sleepDuration: 7.1, dayRating: 8.8 },
-  { sleepDuration: 5.8, dayRating: 4.5 },
-  { sleepDuration: 8.8, dayRating: 6.8 },
-  { sleepDuration: 7.4, dayRating: 9.2 },
-];
+} satisfies ChartConfig;
+
+const MoodChart = ({ entries }: MoodChartProps) => {
+  return (
+    <Card className="border-2 border-border">
+      <CardHeader>
+        <CardTitle className="text-3xl text-white">Mood Trend</CardTitle>
+        <CardDescription>Your mood rating for the last 7 days.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={moodChartConfig} className="h-[250px] w-full">
+          <LineChart data={entries}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              // Removed tickFormatter as backend provides formatted date
+            />
+            <YAxis
+                domain={[1,5]}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => Object.keys(moodToValue).find(key => moodToValue[key as keyof typeof moodToValue] === value) || ''}
+            />
+            <ChartTooltip content={<ChartTooltipContent formatter={(value, name, props) => [`${props.payload.mood} (${value})`, 'Mood']} />} />
+            <Line
+              dataKey="moodValue"
+              type="monotone"
+              stroke="var(--color-mood)"
+              strokeWidth={2}
+              dot={true}
+            />
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
+// SleepChart Component
+type SleepChartProps = {
+  entries: z.infer<typeof ChartsDataResponseSchema>['sleepDurationChartData'];
+};
+
+const sleepChartConfig = {
+  sleep: {
+    label: 'Sleep (hours)',
+    color: 'hsl(var(--chart-1))', // This color is not used by the Bar fill directly
+  },
+} satisfies ChartConfig;
+
+const SleepChart = ({ entries }: SleepChartProps) => {
+  return (
+    <Card className="border-2 border-border">
+      <CardHeader>
+        <CardTitle className="text-3xl text-white">Sleep Duration</CardTitle>
+        <CardDescription>Your sleep duration for the last 7 days.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={sleepChartConfig} className="h-[250px] w-full">
+          <BarChart data={entries}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              // Removed tickFormatter as backend provides formatted date
+            />
+            <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                unit="h"
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            {/* Changed fill color to a lighter blue from Tailwind's color palette */}
+            <Bar dataKey="sleepDuration" fill="hsl(var(--chart-2))" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
+// CorrelationChart Component
+type CorrelationChartProps = {
+  entries: z.infer<typeof ChartsDataResponseSchema>['correlationChartData'];
+};
+
+const correlationChartConfig = {
+  correlation: {
+    label: 'Correlation',
+    color: 'hsl(var(--chart-1))',
+  },
+} satisfies ChartConfig;
+
+
+const CorrelationChart = ({ entries }: CorrelationChartProps) => {
+  return (
+    <Card className="border-2 border-border">
+      <CardHeader>
+        <CardTitle className="text-3xl text-white">Sleep & Day Rating Correlation</CardTitle>
+        <CardDescription>
+          Does more sleep lead to a better day?
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={correlationChartConfig} className="h-[300px] w-full">
+          <ScatterChart
+             margin={{
+              top: 20,
+              right: 20,
+              bottom: 20,
+              left: 20,
+            }}
+          >
+            <CartesianGrid />
+            <XAxis
+                type="number"
+                dataKey="sleepDuration"
+                name="Sleep"
+                unit="h"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+            />
+            <YAxis
+                type="number"
+                dataKey="dayRating"
+                name="Day Rating"
+                unit="/10"
+                domain={[1,10]}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+            />
+            <ZAxis type="number" range={[100]} />
+            <ChartTooltip cursor={{ strokeDasharray: '3 3' }} content={<ChartTooltipContent />} />
+            <Scatter name="Entries" data={entries} fill="var(--color-correlation)" />
+          </ScatterChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
+
 function Page() {
   // Add state for period selection
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
 
-  // Example data for each period (replace with real data fetching as needed)
-  const chartDataWeek = chartData;
-  const chartDataMonth = chartData.map((d) => ({ ...d, desktop: d.desktop + 50 }));
-  const chartDataAll = chartData.map((d) => ({ ...d, desktop: d.desktop + 100 }));
+  // Fetch all charts data and AI insights in a single query
+  const { data: chartsData, isLoading, isError, error } = useQuery<ChartsDataResponse>({
+    queryKey: ['allChartsData', period],
+    queryFn: async () => {
+      const params = new URLSearchParams({ period });
+      const response = await fetch(`/api/insights/chartsdata?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch charts data');
+      }
+      return response.json();
+    },
+  });
 
-  const entriesWeek = entries;
-  const entriesMonth = entries.map((e) => ({ ...e, sleepDuration: e.sleepDuration + 0.5 }));
-  const entriesAll = entries.map((e) => ({ ...e, sleepDuration: e.sleepDuration + 1 }));
-
-  let chartDataToShow = chartDataWeek;
-  let entriesToShow = entriesWeek;
-  let insightText = "There appears to be a positive correlation between sleep duration and day rating, as longer sleep durations generally coincide with higher day ratings. However, the limited dataset shows inconsistencies, suggesting other factors besides sleep duration significantly influence the day's rating.";
-
-  if (period === 'month') {
-    chartDataToShow = chartDataMonth;
-    entriesToShow = entriesMonth;
-    insightText = "Over the past month, the correlation between sleep duration and day rating is more pronounced, with longer sleep generally leading to better days. Still, some outliers exist, indicating other factors at play.";
-  } else if (period === 'all') {
-    chartDataToShow = chartDataAll;
-    entriesToShow = entriesAll;
-    insightText = "Looking at all your data, the overall trend shows that more sleep is often associated with higher day ratings, but the relationship is not perfect. Life's complexity means many factors affect your day.";
+  if (isError) {
+    return (
+      <div className="p-4 text-red-500 text-center">
+        Error loading insights: {error?.message}
+      </div>
+    );
   }
 
+  // Destructure data for easier access, providing empty arrays as fallbacks
+  const {
+    moodChartData = [],
+    sleepDurationChartData = [],
+    correlationChartData = [],
+    aiCorrelationInsight = "Loading correlation insight...",
+  } = chartsData || {};
+
+
   return (
-    <div className="space-y-5 flex flex-col justify-center p-4">
+    <div className="space-y-5 flex flex-col justify-center p-4 relative min-h-screen"> {/* Added relative and min-h-screen */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
+        </div>
+      )}
       <div className="grid gap-0 grid-cols-1">
         <div className="col-span-6 flex items-center justify-between">
           <div>
@@ -128,129 +287,20 @@ function Page() {
             Correlation Insight
           </AlertTitle>
           <AlertDescription className="text-xs md:text-sm lg:text-md text-foreground">
-            {insightText}
+            {aiCorrelationInsight}
           </AlertDescription>
         </div>
       </Alert>
       {/* Responsive grid for charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Sleep Duration */}
-        <div>
-          <Card className="border-2 border-border">
-            <CardHeader>
-              <CardTitle className=" text-3xl text-white">Sleep Duration</CardTitle>
-              <CardDescription>Your sleep duration for the last 7 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig}>
-                <BarChart accessibilityLayer data={chartDataToShow}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm" />
-          </Card>
-        </div>
-        {/* Mood Trend */}
-        <div>
-          <Card className="border-2 border-border">
-            <CardHeader>
-              <CardTitle className=" text-3xl text-white">Mood Trend</CardTitle>
-              <CardDescription>Your mood rating for the last 7 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig}>
-                <LineChart
-                  accessibilityLayer
-                  data={chartDataToShow}
-                  margin={{
-                    left: 12,
-                    right: 12,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Line
-                    dataKey="desktop"
-                    type="natural"
-                    stroke="var(--color-desktop)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm" />
-          </Card>
-        </div>
+        {/* Sleep Duration Chart */}
+        <SleepChart entries={sleepDurationChartData} />
+        {/* Mood Trend Chart */}
+        <MoodChart entries={moodChartData} />
       </div>
       <div>
-        <Card className="border-2 border-border">
-          <CardHeader>
-            <CardTitle>Sleep & Day Rating Correlation</CardTitle>
-            <CardDescription>
-              Does more sleep lead to a better day?
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ScatterChart
-                 margin={{
-                  top: 20,
-                  right: 20,
-                  bottom: 20,
-                  left: 20,
-                }}
-              >
-                <CartesianGrid />
-                <XAxis 
-                    type="number" 
-                    dataKey="sleepDuration" 
-                    name="Sleep" 
-                    unit="h"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                />
-                <YAxis 
-                    type="number" 
-                    dataKey="dayRating" 
-                    name="Day Rating" 
-                    unit="/10"
-                    domain={[1,10]}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                />
-                <ZAxis type="number" range={[100]} />
-                <ChartTooltip cursor={{ strokeDasharray: '3 3' }} content={<ChartTooltipContent />} />
-                <Scatter name="Entries" data={entriesToShow} fill="var(--chart-1)" />
-              </ScatterChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        {/* Correlation Chart */}
+        <CorrelationChart entries={correlationChartData} />
       </div>
     </div>
   );

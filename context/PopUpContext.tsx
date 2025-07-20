@@ -1,8 +1,5 @@
+'use client'
 import React, { createContext, useContext, useState, ReactNode } from 'react'
-///this code made me stare on screen for more that 5+ hour use becuse I missed to warp the BottomNav <provider>{childern}</provider> <BottomNav> 
-///and I was just blind to see it 
-/// but it's a relief and great to both solve and state at the screen to digbug because that is what codes do, I love everthing about this life
-
 interface PopupContextType {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
