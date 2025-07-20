@@ -121,7 +121,7 @@ sleepRouter.post(
   async (c) => {
     const CurrentUserID = c.get("user")!.id;
     const validatedBody = c.req.valid("json");
-
+    console.log("current ID: " ,CurrentUserID)
     let actualDurationHours = validatedBody.durationHours;
 
     if (actualDurationHours === undefined || actualDurationHours === null) {

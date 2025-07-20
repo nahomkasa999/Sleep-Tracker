@@ -66,7 +66,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
   // Store original entry data for comparison
   const originalEntry = { ...entry };
 
-  const { control, handleSubmit, watch, setValue, reset } = useForm<EditEntryForm>({
+  const { control, handleSubmit, watch, setValue, reset, formState: { isSubmitting, errors } } = useForm<EditEntryForm>({
     resolver: zodResolver(editEntrySchema),
     defaultValues: {
       ...entry,
@@ -343,7 +343,9 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
           <DialogFooter className="mt-6 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-foreground hover:bg-accent">Cancel</Button>
-            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Save changes</Button>
+            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save changes"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

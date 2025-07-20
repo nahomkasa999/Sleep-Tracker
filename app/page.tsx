@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 
-export default function HomePage() {
+export default function HomePage() { 
   const { data: session, isPending } = useSession();
 
   if (isPending === true) {

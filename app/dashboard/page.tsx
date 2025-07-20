@@ -75,39 +75,45 @@ function Page() {
   const { data: aiCorrelationInsight, isLoading: isAICorrelationLoading, isError: isAICorrelationError } = useQuery<{ insight: string }>({
     queryKey: ['aiCorrelationInsightDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/AI/correlation?period=all`);
+      const response = await fetch(`/api/insights/AI/correlation?period=all`); // Fetch weekly insight for dashboard
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch AI correlation insight');
       }
       return response.json();
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
-
+  // Fetch Summary Data
   const { data: summaryData, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery<SleepInsightsResponse>({
     queryKey: ['summaryDataDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/summary?period=all`); 
+      const response = await fetch(`/api/insights/summary?period=all`); // Fetch weekly summary
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch summary data');
       }
       return response.json();
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
-
+  // Fetch All Sleep Entries for the table
   const { data: allSleepEntries, isLoading: isEntriesLoading, isError: isEntriesError } = useQuery<SleepEntryReceivingSchemaDBType>({
     queryKey: ['allSleepEntriesDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/sleep`); 
+      const response = await fetch(`/api/sleep`); // Fetch all sleep entries
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch sleep entries');
       }
-      return (await response.json()).data;
+      return (await response.json()).data; // Assuming data is nested under 'data'
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   
@@ -136,16 +142,30 @@ function Page() {
 
       return response.json();
     },
+    onMutate: async (updatedEntry) => {
+      await queryClient.cancelQueries({ queryKey: ["allSleepEntriesDashboard"] });
+      const previousData = queryClient.getQueryData(["allSleepEntriesDashboard"]);
+      queryClient.setQueryData(["allSleepEntriesDashboard"], (old: any[] = []) => {
+        return old.map((entry) =>
+          entry.id === updatedEntry.id ? { ...entry, ...updatedEntry } : entry
+        );
+      });
+      return { previousData };
+    },
+    onError: (error, updatedEntry, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["allSleepEntriesDashboard"], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
+    },
     onSuccess: () => {
       toast.success("Entry updated successfully!");
       
-      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
       setEditDialogOpen(false); 
-    },
-    onError: (error: any) => {
-      toast.error(`Failed to update entry: ${error.message}`);
     },
   });
 
@@ -161,16 +181,26 @@ function Page() {
       }
       return response.json();
     },
+    onMutate: async (entryId) => {
+      await queryClient.cancelQueries({ queryKey: ["allSleepEntriesDashboard"] });
+      const previousData = queryClient.getQueryData(["allSleepEntriesDashboard"]);
+      queryClient.setQueryData(["allSleepEntriesDashboard"], (old: any[] = []) => {
+        return old.filter((entry) => entry.id !== entryId);
+      });
+      return { previousData };
+    },
+    onError: (error, entryId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["allSleepEntriesDashboard"], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
+    },
     onSuccess: () => {
       toast.success("Entry deleted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
-    },
-    onError: (error: any) => {
-      toast.error(
-        `Failed to delete entry: ${error.message || "Unknown error"}`
-      );
     },
   });
 

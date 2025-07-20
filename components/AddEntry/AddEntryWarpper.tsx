@@ -7,17 +7,15 @@ import { toast } from 'sonner';
 import { usePopupContext } from '@/context/PopUpContext';
 import { CreateEntryDialog, CreateEntryForm } from '@/components/AddEntry/AddEntry'; // Assuming this path is correct for your dialog component
 
-/**
- * GlobalCreateEntryDialog handles the state and logic for the CreateEntryDialog.
- * It is a client component so it can use React hooks (useState, useContext, useMutation).
- */
 function CreateEntryDialogWrapper() {
   const { isOpen, setIsOpen } = usePopupContext();
   const queryClient = useQueryClient();
 
-  // TanStack Query mutation for creating a new sleep entry
   const createEntryMutation = useMutation({
     mutationFn: async (data: CreateEntryForm) => {
+      // --- DEBUGGING LOG: Log the data being sent to the backend ---
+      console.log("Payload being sent to /api/sleep:", JSON.stringify(data, null, 2));
+
       const response = await fetch('/api/sleep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,21 +24,59 @@ function CreateEntryDialogWrapper() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create entry');
+        // --- DEBUGGING LOG: Log the full error response from the backend ---
+        console.error("Backend error response for /api/sleep:", errorData);
+        throw new Error(errorData.message || errorData.error || 'Failed to create entry: Unknown backend error');
       }
       return response.json();
     },
-    onSuccess: () => {
-      toast.success('Entry created successfully!');
-      // Invalidate relevant queries to refetch data on dashboard/analytics
+    onMutate: async (newEntry) => {
+      // Optimistic update (if applicable, ensure it matches your data structure)
+      await queryClient.cancelQueries({ queryKey: ["allChartsData"] });
+      const period = 'week'; // Assuming 'week' is the default period for this optimistic update
+      const previousData = queryClient.getQueryData(["allChartsData", period]);
+
+      // Safely update the cache for sleepDurationChartData
+      queryClient.setQueryData(["allChartsData", period], (old: any) => {
+        if (!old) {
+          return {
+            sleepDurationChartData: [{ date: newEntry.entryDate, sleepDuration: newEntry.durationHours }],
+            moodChartData: [],
+            correlationChartData: [],
+            aiCorrelationInsight: '',
+          };
+        }
+        return {
+          ...old,
+          sleepDurationChartData: [
+            ...(old.sleepDurationChartData || []), // Ensure it's an array
+            { date: newEntry.entryDate, sleepDuration: newEntry.durationHours }
+          ],
+        };
+      });
+      return { previousData };
+    },
+    onError: (error: any, variables, context) => {
+      // --- DEBUGGING LOG: Log the error caught by react-query ---
+      console.error("React Query Mutation Error:", error);
+      toast.error(`Failed to create entry: ${error.message || 'An unknown error occurred.'}`);
+      // Revert optimistic update if there was one
+      if (context?.previousData) {
+        const period = 'week';
+        queryClient.setQueryData(["allChartsData", period], context.previousData);
+      }
+    },
+    onSettled: (data, error, variables, context) => {
+      // Invalidate queries regardless of success or failure to ensure fresh data
+      const period = 'week';
+      queryClient.invalidateQueries({ queryKey: ["allChartsData", period] });
       queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["allChartsData"] }); // For analytics page
-      setIsOpen(false); // Close the dialog on success
     },
-    onError: (error: any) => {
-      toast.error(`Failed to create entry: ${error.message}`);
+    onSuccess: () => {
+      toast.success('Entry created successfully!');
+      setIsOpen(false); // Close the dialog on success
     },
   });
 

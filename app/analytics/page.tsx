@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/chart"
 import { Scatter, ScatterChart, Bar, BarChart, CartesianGrid, XAxis, Line, LineChart, YAxis,ZAxis } from 'recharts';
 import { useState } from "react";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
 // Import the new ChartsDataResponse type
 import { ChartsDataResponse, ChartsDataResponseSchema } from "@/app/lib/insight"; // Adjust path as needed
@@ -211,18 +212,49 @@ const CorrelationChart = ({ entries }: CorrelationChartProps) => {
 
 function Page() {
   const { data: session, isPending } = useSession();
+  const queryClient = useQueryClient();
 
-  if (isPending === true) {
-    return <div>Loading...</div>;
-  }
+  // Example optimistic mutation for adding a sleep entry
+  const addEntryMutation = useMutation({
+    mutationFn: async (newEntry: { date: string; sleepDuration: number }) => {
+      const response = await fetch('/api/sleep', {
+        method: 'POST',
+        body: JSON.stringify(newEntry),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to add entry');
+      return response.json();
+    },
+    onMutate: async (newEntry) => {
+      await queryClient.cancelQueries({ queryKey: ['allChartsData'] });
+      const previousData = queryClient.getQueryData(['allChartsData', period]);
+      queryClient.setQueryData(['allChartsData', period], (old: ChartsDataResponse | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          sleepDurationChartData: [
+            ...old.sleepDurationChartData,
+            { date: newEntry.date, sleepDuration: newEntry.sleepDuration }
+          ],
+        };
+      });
+      return { previousData };
+    },
+    onError: (err, newEntry, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['allChartsData', period], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['allChartsData', period] });
+    }
+  });
 
-  if (!session) {
-    redirect("/register");
-    return null;
-  }
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
 
-  
+  // Use React Query cache for instant navigation and offline support
+  // Only fetch once unless data is stale (5 min), cache stays for 30 min
+  // No refetch on window focus
   const { data: chartsData, isLoading, isError, error } = useQuery<ChartsDataResponse>({
     queryKey: ['allChartsData', period],
     queryFn: async () => {
@@ -234,6 +266,9 @@ function Page() {
       }
       return response.json();
     },
+    staleTime: 1000 * 60 * 5, 
+    refetchOnWindowFocus: false,
+    
   });
 
   if (isError) {
@@ -258,6 +293,7 @@ function Page() {
 
   return (
     <div className="space-y-5 flex flex-col justify-center p-4 relative min-h-screen"> {/* Added relative and min-h-screen */}
+      {/* Removed the Add Sleep Entry (Optimistic Demo) button */}
       <div className="grid gap-0 grid-cols-1">
         <div className="col-span-6 flex items-center justify-between">
           <div>

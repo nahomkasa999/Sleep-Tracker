@@ -38,7 +38,7 @@ type CreateEntryDialogProps = {
 };
 
 export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryDialogProps) {
-  const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<CreateEntryForm>({
+  const { control, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<CreateEntryForm>({
     resolver: zodResolver(createEntrySchema),
     defaultValues: {
       entryDate: formatDateOnly(new Date()), // Default to today's date
@@ -78,11 +78,11 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
         bedtime: formatDateTimeLocal(new Date()),
         wakeUpTime: formatDateTimeLocal(new Date()),
         qualityRating: 5,
-        sleepcomments: '',
-        durationHours: 0,
+        sleepcomments: 'Normal',
+        durationHours: 6,
         dayRating: 5,
         mood: 'Neutral',
-        daycomments: '',
+        daycomments: 'Normal',
       });
     }
   }, [isOpen, reset]);
@@ -100,6 +100,7 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
       // Ensure mood is null if 'Neutral' (or other default you choose to represent null)
       mood: data.mood === 'Neutral' ? null : data.mood,
     };
+    console.log(payload)
     await onSave(payload);
     onOpenChange(false);
   };
@@ -288,7 +289,9 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
 
           <DialogFooter className="mt-6 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-foreground hover:bg-accent">Cancel</Button>
-            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Save Entry</Button>
+            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save Entry"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
