@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { authClient } from "./lib/auth-client";
 import { useSession } from "./lib/auth-client";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 
 export default function HomePage() { 
   const { data: session, isPending } = useSession();
+  const router = useRouter();
 
   if (isPending === true) {
     return <div>Loading...</div>;
@@ -34,7 +36,10 @@ export default function HomePage() {
           <Button
             variant="destructive"
             className="w-full max-w-xs"
-            onClick={() => authClient.signOut()}
+            onClick={async () => {
+              await authClient.signOut();
+              router.push("/register");
+            }}
           >
             Sign Out
           </Button>

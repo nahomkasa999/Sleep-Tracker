@@ -50,7 +50,7 @@ const editEntrySchema = z.object({
   durationHours: z.number().nullable().optional(),
   dayRating: z.number().min(1).max(10, "Day rating must be between 1 and 10"),
   mood: z.enum(['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired']).nullable().optional(),
-  dayComments: z.string().nullable().optional(), // Matches backend 'daycomments'
+  dayComments: z.string().nullable().optional(), // Matches backend 'daycomments' 
 });
 
 export type EditEntryForm = z.infer<typeof editEntrySchema>;

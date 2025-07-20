@@ -21,7 +21,7 @@ app.use('*', logger());
 app.use(
     "*",
     cors({
-        origin: "http://localhost:3000", // replace with your origin
+        origin: "https://nahom-sleep-tracker.vercel.app", // replace with your origin
         allowHeaders: ["Content-Type", "Authorization"],
         allowMethods: ["POST", "GET", "OPTIONS"],
         exposeHeaders: ["Content-Length"],
