@@ -106,7 +106,8 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] border-2 border-border bg-background text-foreground rounded-lg shadow-xl p-6">
+      {/* Added max-h-screen and overflow-y-auto for responsiveness */}
+      <DialogContent className="sm:max-w-[500px] md:max-w-[600px] max-h-screen overflow-y-auto border-2 border-border bg-background text-foreground rounded-lg shadow-xl p-6">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader className="mb-6">
             <DialogTitle className="text-3xl font-bold text-white">New Entry</DialogTitle>
@@ -196,9 +197,6 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
                     max={10}
                     step={1}
                     className="w-full"
-                    trackClassName="bg-muted-foreground/30 h-2 rounded-full"
-                    rangeClassName="bg-primary h-2 rounded-full"
-                    thumbClassName="h-5 w-5 bg-primary border border-primary-foreground rounded-full shadow-md transition-transform duration-100 hover:scale-110"
                   />
                 )}
               />
@@ -263,9 +261,6 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
                     max={10}
                     step={1}
                     className="w-full"
-                    trackClassName="bg-muted-foreground/30 h-2 rounded-full"
-                    rangeClassName="bg-primary h-2 rounded-full"
-                    thumbClassName="h-5 w-5 bg-primary border border-primary-foreground rounded-full shadow-md transition-transform duration-100 hover:scale-110"
                   />
                 )}
               />

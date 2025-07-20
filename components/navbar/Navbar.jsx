@@ -13,6 +13,10 @@ import {
 // import { useAddEntry } from '@/components/add-entry-dialog';
  import { Button } from '@/components/ui/button';
 import { usePopupContext } from "@/context/PopUpContext";
+
+
+
+
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },
@@ -21,7 +25,6 @@ const navItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const { isOpen, setIsOpen } = usePopupContext();
-
 
   return (
     <TooltipProvider>

@@ -3,6 +3,7 @@ import React from "react";
 import { ClockFading, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TrendingUp } from "lucide-react"
+import { useSession } from "@/app/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChartsDataResponse, ChartsDataResponseSchema } from "@/app/lib/insight"; // Adjust path as needed
 import { z } from "zod"; // Import z for z.infer
 import { AnalyticsLoadingSkeleton } from "@/components/skeleton/AnalyticsLoadingSkeleton";
+import { redirect } from "next/navigation";
 
 // Define Mood enum if not already globally available or imported
 enum Mood {
@@ -53,7 +55,7 @@ const moodToValue = {
 const moodChartConfig = {
   mood: {
     label: 'Mood',
-    color: 'hsl(var(--chart-1))',
+    color: 'hsl(var(--chart-1))', // Aligned with primary button color
   },
 } satisfies ChartConfig;
 
@@ -73,7 +75,7 @@ const MoodChart = ({ entries }: MoodChartProps) => {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              // Removed tickFormatter as backend provides formatted date
+              
             />
             <YAxis
                 domain={[1,5]}
@@ -86,7 +88,7 @@ const MoodChart = ({ entries }: MoodChartProps) => {
             <Line
               dataKey="moodValue"
               type="monotone"
-              stroke="var(--color-mood)"
+              stroke="var(--color-primary)" 
               strokeWidth={2}
               dot={true}
             />
@@ -105,7 +107,7 @@ type SleepChartProps = {
 const sleepChartConfig = {
   sleep: {
     label: 'Sleep (hours)',
-    color: 'hsl(var(--chart-1))', // This color is not used by the Bar fill directly
+    color: 'hsl(var(--chart-1))', // Aligned with primary button color
   },
 } satisfies ChartConfig;
 
@@ -134,8 +136,7 @@ const SleepChart = ({ entries }: SleepChartProps) => {
                 unit="h"
             />
             <ChartTooltip content={<ChartTooltipContent />} />
-            {/* Changed fill color to a lighter blue from Tailwind's color palette */}
-            <Bar dataKey="sleepDuration" fill="hsl(var(--chart-2))" radius={4} />
+            <Bar dataKey="sleepDuration" fill="var(--color-primary)" radius={4} /> {/* Changed to match primary button color */}
           </BarChart>
         </ChartContainer>
       </CardContent>
@@ -151,12 +152,14 @@ type CorrelationChartProps = {
 const correlationChartConfig = {
   correlation: {
     label: 'Correlation',
-    color: 'hsl(var(--chart-1))',
+    color: 'hsl(var(--chart-1))', // Aligned with primary button color
   },
 } satisfies ChartConfig;
 
 
 const CorrelationChart = ({ entries }: CorrelationChartProps) => {
+
+
   return (
     <Card className="border-2 border-border">
       <CardHeader>
@@ -197,7 +200,7 @@ const CorrelationChart = ({ entries }: CorrelationChartProps) => {
             />
             <ZAxis type="number" range={[100]} />
             <ChartTooltip cursor={{ strokeDasharray: '3 3' }} content={<ChartTooltipContent />} />
-            <Scatter name="Entries" data={entries} fill="var(--color-correlation)" />
+            <Scatter name="Entries" data={entries} fill="var(--color-primary)" /> {/* Changed to match primary button color */}
           </ScatterChart>
         </ChartContainer>
       </CardContent>
@@ -207,10 +210,19 @@ const CorrelationChart = ({ entries }: CorrelationChartProps) => {
 
 
 function Page() {
-  // Add state for period selection
+  const { data: session, isPending } = useSession();
+
+  if (isPending === true) {
+    return <div>Loading...</div>;
+  }
+
+  if (!session) {
+    redirect("/register");
+    return null;
+  }
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
 
-  // Fetch all charts data and AI insights in a single query
+  
   const { data: chartsData, isLoading, isError, error } = useQuery<ChartsDataResponse>({
     queryKey: ['allChartsData', period],
     queryFn: async () => {
@@ -290,15 +302,14 @@ function Page() {
           </AlertDescription>
         </div>
       </Alert>
-      {/* Responsive grid for charts */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Sleep Duration Chart */}
+        
         <SleepChart entries={sleepDurationChartData} />
-        {/* Mood Trend Chart */}
+        
         <MoodChart entries={moodChartData} />
       </div>
       <div>
-        {/* Correlation Chart */}
         <CorrelationChart entries={correlationChartData} />
       </div>
     </div>

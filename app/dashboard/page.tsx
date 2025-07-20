@@ -1,5 +1,8 @@
 "use client";
 import React, { useState } from "react";
+import { auth } from "@/app/lib/auth";
+import { useSession } from "@/app/lib/auth-client";
+import { redirect } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
@@ -39,6 +42,9 @@ import { SleepEntryReceivingSchemaDBType, SleepInsightsResponse } from "@/app/li
 import { CorrelationResponse } from "@/app/lib/utllity";
 import DashboardLoadingSkeleton from "@/components/skeleton/DashboardLoadingSkeleton";
 
+
+ 
+
 // Define JournalEntry based on SleepEntryReceivingSchemaDBType (single entry)
 export type JournalEntry = SleepEntryReceivingSchemaDBType[number];
 
@@ -57,7 +63,10 @@ export type EditEntryFormType = {
 };
 
 
+
 function Page() {
+  // All hooks must be called unconditionally at the top
+  const { data: session, isPending } = useSession();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -114,7 +123,6 @@ function Page() {
       if (payload.wakeUpTime) payload.wakeUpTime = new Date(payload.wakeUpTime).toISOString();
       if (payload.entryDate) payload.entryDate = new Date(payload.entryDate).toISOString();
 
-
       const response = await fetch(`/api/sleep/${entryId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -166,8 +174,16 @@ function Page() {
     },
   });
 
-  const entries: JournalEntry[] = allSleepEntries || [];
+  // All hooks are now called before any conditional logic
+  if (isPending === true) {
+    return <div>Loading...</div>;
+  }
 
+  if (!session) {
+    redirect("/register");
+    return null;
+  }
+ 
   // Modified to use the formatting helpers for consistent input to EditEntryDialog
   function toEditEntryForm(entry: JournalEntry): EditEntryFormType {
     return {
@@ -188,6 +204,8 @@ function Page() {
     deleteEntryMutation.mutate(entryId);
   }
 
+  const entries: JournalEntry[] = allSleepEntries || [];
+
   const isLoading = isAICorrelationLoading || isSummaryLoading || isEntriesLoading;
   const isError = isAICorrelationError || isSummaryError || isEntriesError;
 
@@ -203,7 +221,7 @@ function Page() {
         Error loading dashboard:
         {isAICorrelationError && <p>{aiCorrelationInsight?.insight || "AI Correlation Error"}</p>}
         {isSummaryError && <p>{summaryData?.message || "Summary Data Error"}</p>}
-        {isEntriesError && <p>{allSleepEntries?.message || "Sleep Entries Error"}</p>}
+        {isEntriesError && <p>{true || "Sleep Entries Error"}</p>}
       </div>
     );
   }

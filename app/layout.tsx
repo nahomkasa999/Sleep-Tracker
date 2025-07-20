@@ -5,6 +5,7 @@ import Providers from "@/components/Providers"; // Keep your existing Providers
 import "./globals.css";
 import { Toaster, toast } from 'sonner'; // Import Toaster AND toast for toast messages
 import  CreateEntryDialogWrapper from "@/components/AddEntry/AddEntryWarpper"
+import NavbarWrapper from "@/components/navbar/NavbarWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,8 +39,8 @@ export default function RootLayout({
           </main>
           {/* Render the global dialog here */}
           <CreateEntryDialogWrapper />
-          <BottomNav />
-          <Toaster /> {/* Ensure Toaster is present for toast messages */}
+          <NavbarWrapper />
+          <Toaster /> 
         </Providers>
       </body>
     </html>

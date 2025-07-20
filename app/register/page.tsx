@@ -1,39 +1,41 @@
 'use client'
 
 import { authClient } from '@/app/lib/auth-client';
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const [error, setError] = useState<string | null>(null);
-
   const router = useRouter();
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: any) => {
+    setError(null);
     const { error } = await authClient.signUp.email({
-      email: email,
-      password: password,
-      name: name,
+      email: data.email,
+      password: data.password,
+      name: data.name,
       fetchOptions: {
         onSuccess: () => {
-          router.push("/")
+          toast.success("Registration successful!");
+          router.push("/dashboard");
         },
-        onError:() => {
-          router.push("/error")
+        onError: () => {
+          toast.error("Registration failed. Please try again.");
+          router.push("/error");
         }
       }
     });
     if (error) {
       setError(error.message!);
+      toast.error(error.message!);
     }
   };
 
@@ -47,10 +49,11 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <form onSubmit={handleSignUp} className="grid gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="name" placeholder="John Doe" {...register("name", { required: true })} />
+              {errors.name && <span className="text-red-500 text-sm">Name is required</span>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -58,17 +61,19 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email", { required: true })}
               />
+              {errors.email && <span className="text-red-500 text-sm">Email is required</span>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" {...register("password", { required: true })} />
+              {errors.password && <span className="text-red-500 text-sm">Password is required</span>}
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" className="w-full">Sign Up</Button>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
+            </Button>
           </form>
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

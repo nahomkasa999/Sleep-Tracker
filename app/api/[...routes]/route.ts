@@ -49,9 +49,7 @@ app.on(["POST", "GET"], "/auth/*", (c) => {
 
 app.route('/sleep', sleepRouter);
 app.route('/insights', insightsRouter);
-
 app.get("/swagger", swaggerUI({url: "/api/doc"}))
-
 app.get("/doc", (c) => c.json(apiDefinition));
 
 export const GET = handle(app)
