@@ -29,7 +29,7 @@ export default function RegisterPage() {
         },
         onError: () => {
           toast.error("Registration failed. Please try again.");
-          router.push("/error");
+          
         }
       }
     });

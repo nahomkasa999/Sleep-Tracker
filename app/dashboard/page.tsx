@@ -33,11 +33,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { toast } from "sonner";
-// Import the formatting helpers directly from the EditEntryDialog component file
+
 import { EditEntryDialog, formatDateTimeLocal, formatDateOnly } from "@/components/EditEntries/EditEntries";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// Import types from your insights route and utility
+
 import { SleepEntryReceivingSchemaDBType, SleepInsightsResponse } from "@/app/lib/insight";
 import { CorrelationResponse } from "@/app/lib/utllity";
 import DashboardLoadingSkeleton from "@/components/skeleton/DashboardLoadingSkeleton";
@@ -45,37 +45,37 @@ import DashboardLoadingSkeleton from "@/components/skeleton/DashboardLoadingSkel
 
  
 
-// Define JournalEntry based on SleepEntryReceivingSchemaDBType (single entry)
+
 export type JournalEntry = SleepEntryReceivingSchemaDBType[number];
 
-// Define the type for the data expected by the EditEntryDialog
+
 export type EditEntryFormType = {
   id: string;
-  entryDate: string; // YYYY-MM-DD
-  bedtime: string; // YYYY-MM-DDTHH:MM
-  wakeUpTime: string; // YYYY-MM-DDTHH:MM
+  entryDate: string; 
+  bedtime: string; 
+  wakeUpTime: string; 
   qualityRating: number;
-  sleepComments?: string | null; // Matches backend 'sleepcomments'
+  sleepComments?: string | null; 
   durationHours?: number | null;
   dayRating: number;
   mood?: 'Happy' | 'Stressed' | 'Neutral' | 'Sad' | 'Excited' | 'Tired' | null;
-  dayComments?: string | null; // Matches backend 'daycomments'
+  dayComments?: string | null; 
 };
 
 
 
 function Page() {
-  // All hooks must be called unconditionally at the top
+  
   const { data: session, isPending } = useSession();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch AI Correlation Insight
+
   const { data: aiCorrelationInsight, isLoading: isAICorrelationLoading, isError: isAICorrelationError } = useQuery<{ insight: string }>({
     queryKey: ['aiCorrelationInsightDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/AI/correlation?period=all`); // Fetch weekly insight for dashboard
+      const response = await fetch(`/api/insights/AI/correlation?period=all`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch AI correlation insight');
@@ -84,11 +84,11 @@ function Page() {
     },
   });
 
-  // Fetch Summary Data
+
   const { data: summaryData, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery<SleepInsightsResponse>({
     queryKey: ['summaryDataDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/summary?period=all`); // Fetch weekly summary
+      const response = await fetch(`/api/insights/summary?period=all`); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch summary data');
@@ -97,28 +97,28 @@ function Page() {
     },
   });
 
-  // Fetch All Sleep Entries for the table
+
   const { data: allSleepEntries, isLoading: isEntriesLoading, isError: isEntriesError } = useQuery<SleepEntryReceivingSchemaDBType>({
     queryKey: ['allSleepEntriesDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/sleep`); // Fetch all sleep entries
+      const response = await fetch(`/api/sleep`); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch sleep entries');
       }
-      return (await response.json()).data; // Assuming data is nested under 'data'
+      return (await response.json()).data;
     },
   });
 
-  // Mutation for editing an entry
+  
   const editEntryMutation = useMutation({
-    // Corrected data type to Partial<EditEntryFormType> & { id: string }
+    
     mutationFn: async (data: Partial<EditEntryFormType> & { id: string }) => {
       const entryId = data.id;
-      // Remove id from the payload as it's in the URL
+      
       const { id, ...payload } = data;
 
-      // Convert date strings back to ISO format if they are present in the partial update
+     
       if (payload.bedtime) payload.bedtime = new Date(payload.bedtime).toISOString();
       if (payload.wakeUpTime) payload.wakeUpTime = new Date(payload.wakeUpTime).toISOString();
       if (payload.entryDate) payload.entryDate = new Date(payload.entryDate).toISOString();
@@ -138,18 +138,18 @@ function Page() {
     },
     onSuccess: () => {
       toast.success("Entry updated successfully!");
-      // Invalidate queries to trigger a refetch and update the table/insights
+      
       queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["aiCorrelationInsightDashboard"] });
       queryClient.invalidateQueries({ queryKey: ["summaryDataDashboard"] });
-      setEditDialogOpen(false); // Close the dialog
+      setEditDialogOpen(false); 
     },
     onError: (error: any) => {
       toast.error(`Failed to update entry: ${error.message}`);
     },
   });
 
-  // Mutation for deleting an entry
+  
   const deleteEntryMutation = useMutation({
     mutationFn: async (entryId: string) => {
       const response = await fetch(`/api/sleep/${entryId}`, {
@@ -174,23 +174,15 @@ function Page() {
     },
   });
 
-  // All hooks are now called before any conditional logic
-  if (isPending === true) {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    redirect("/register");
-    return null;
-  }
- 
-  // Modified to use the formatting helpers for consistent input to EditEntryDialog
+  
+  
+  
   function toEditEntryForm(entry: JournalEntry): EditEntryFormType {
     return {
       id: entry.id,
-      entryDate: formatDateOnly(entry.entryDate), // Format for date input
-      bedtime: formatDateTimeLocal(entry.bedtime), // Format for datetime-local
-      wakeUpTime: formatDateTimeLocal(entry.wakeUpTime), // Format for datetime-local
+      entryDate: formatDateOnly(entry.entryDate), 
+      bedtime: formatDateTimeLocal(entry.bedtime),
+      wakeUpTime: formatDateTimeLocal(entry.wakeUpTime),
       qualityRating: entry.qualityRating,
       sleepComments: entry.sleepcomments ?? null,
       durationHours: entry.durationHours ?? null,
@@ -235,10 +227,8 @@ function Page() {
     ? `${summaryData.summary.averageDayRating.toFixed(1)}/10`
     : 'N/A';
 
-  // For average mood, since the summary endpoint doesn't provide it,
-  // you might need to calculate it from `allSleepEntries` if you want a true average.
-  // For now, keeping it static or a placeholder.
-  const avgMood = "N/A"; // Or implement logic to find most frequent mood from `entries`
+  
+  const avgMood = "N/A"; 
 
   const dashboardMetrics = [
     {
@@ -248,7 +238,7 @@ function Page() {
     },
     {
       title: "Avg. Mood",
-      value: avgMood, // Placeholder or calculated from entries
+      value: avgMood,
       icon: Smile,
     },
     {
@@ -421,7 +411,7 @@ function Page() {
         {/* Edit Entry Dialog */}
         {editingEntry && (
           <EditEntryDialog
-            entry={toEditEntryForm(editingEntry)} // Pass the correctly formatted entry
+            entry={toEditEntryForm(editingEntry)} 
             isOpen={editDialogOpen}
             onOpenChange={setEditDialogOpen}
             onSave={async (data) => {
