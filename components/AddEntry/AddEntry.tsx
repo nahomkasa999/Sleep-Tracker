@@ -98,7 +98,7 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
       entryDate: new Date(data.entryDate).toISOString(),
       sleepcomments: data.sleepcomments === '' ? undefined : data.sleepcomments,
       daycomments: data.daycomments === '' ? undefined : data.daycomments,
-      mood: moodValue,
+      mood: moodValue as CreateEntryForm['mood'],
     };
     await onSave(payload);
     onOpenChange(false);
