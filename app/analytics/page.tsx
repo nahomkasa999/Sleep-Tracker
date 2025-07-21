@@ -2,219 +2,19 @@
 import React from "react";
 import { ClockFading, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TrendingUp } from "lucide-react"
 import { useSession } from "@/app/lib/auth-client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Scatter, ScatterChart, Bar, BarChart, CartesianGrid, XAxis, Line, LineChart, YAxis,ZAxis } from 'recharts';
 import { useState } from "react";
-import { useQuery, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-
-// Import the new ChartsDataResponse type
-import { ChartsDataResponse, ChartsDataResponseSchema } from "@/app/lib/insight"; // Adjust path as needed
-import { z } from "zod"; // Import z for z.infer
+import { ChartsDataResponse  } from "@/app/lib/insight";
 import { AnalyticsLoadingSkeleton } from "@/components/skeleton/AnalyticsLoadingSkeleton";
-import { redirect } from "next/navigation";
-
-// Define Mood enum if not already globally available or imported
-enum Mood {
-  Happy = "Happy",
-  Stressed = "Stressed",
-  Neutral = "Neutral",
-  Sad = "Sad",
-  Excited = "Excited",
-  Tired = "Tired",
-}
-
-// MoodChart Component
-type MoodChartProps = {
-  entries: z.infer<typeof ChartsDataResponseSchema>['moodChartData'];
-};
-
-const moodToValue = {
-    'Happy': 5,
-    'Excited': 4,
-    'Neutral': 3,
-    'Tired': 2,
-    'Stressed': 2,
-    'Sad': 1,
-}
-
-const moodChartConfig = {
-  mood: {
-    label: 'Mood',
-    color: 'hsl(var(--chart-1))', // Aligned with primary button color
-  },
-} satisfies ChartConfig;
-
-const MoodChart = ({ entries }: MoodChartProps) => {
-  return (
-    <Card className="border-2 border-border">
-      <CardHeader>
-        <CardTitle className="text-3xl text-foreground">Mood Trend</CardTitle>
-        <CardDescription>Your mood rating for the last 7 days.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={moodChartConfig} className="h-[250px] w-full">
-          <LineChart data={entries}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              
-            />
-            <YAxis
-                domain={[1,5]}
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tickFormatter={(value) => Object.keys(moodToValue).find(key => moodToValue[key as keyof typeof moodToValue] === value) || ''}
-            />
-            <ChartTooltip content={<ChartTooltipContent formatter={(value, name, props) => [`${props.payload.mood} (${value})`, 'Mood']} />} />
-            <Line
-              dataKey="moodValue"
-              type="monotone"
-              stroke="var(--color-primary)" 
-              strokeWidth={2}
-              dot={true}
-            />
-          </LineChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  );
-};
-
-// SleepChart Component
-type SleepChartProps = {
-  entries: z.infer<typeof ChartsDataResponseSchema>['sleepDurationChartData'];
-};
-
-const sleepChartConfig = {
-  sleep: {
-    label: 'Sleep (hours)',
-    color: 'hsl(var(--chart-1))', // Aligned with primary button color
-  },
-} satisfies ChartConfig;
-
-const SleepChart = ({ entries }: SleepChartProps) => {
-  return (
-    <Card className="border-2 border-border">
-      <CardHeader>
-        <CardTitle className="text-3xl text-foreground">Sleep Duration</CardTitle>
-        <CardDescription>Your sleep durations.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={sleepChartConfig} className="h-[250px] w-full">
-          <BarChart data={entries}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              // Removed tickFormatter as backend provides formatted date
-            />
-            <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                unit="h"
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="sleepDuration" fill="var(--color-primary)" radius={4} /> {/* Changed to match primary button color */}
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  );
-};
-
-// CorrelationChart Component
-type CorrelationChartProps = {
-  entries: z.infer<typeof ChartsDataResponseSchema>['correlationChartData'];
-};
-
-const correlationChartConfig = {
-  correlation: {
-    label: 'Correlation',
-    color: 'hsl(var(--chart-1))', // Aligned with primary button color
-  },
-} satisfies ChartConfig;
-
-
-const CorrelationChart = ({ entries }: CorrelationChartProps) => {
-
-
-  return (
-    <Card className="border-2 border-border">
-      <CardHeader>
-        <CardTitle className="text-3xl text-foreground">Sleep & Day Rating Correlation</CardTitle>
-        <CardDescription>
-          Does more sleep lead to a better day?
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={correlationChartConfig} className="h-[300px] w-full">
-          <ScatterChart
-             margin={{
-              top: 20,
-              right: 20,
-              bottom: 20,
-              left: 20,
-            }}
-          >
-            <CartesianGrid />
-            <XAxis
-                type="number"
-                dataKey="sleepDuration"
-                name="Sleep"
-                unit="h"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-            />
-            <YAxis
-                type="number"
-                dataKey="dayRating"
-                name="Day Rating"
-                unit="/10"
-                domain={[1,10]}
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-            />
-            <ZAxis type="number" range={[100]} />
-            <ChartTooltip cursor={{ strokeDasharray: '3 3' }} content={<ChartTooltipContent />} />
-            <Scatter name="Entries" data={entries} fill="var(--color-primary)" /> {/* Changed to match primary button color */}
-          </ScatterChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  );
-};
+import CorrelationChart from "@/components/charts/correlation";
+import MoodChart from "@/components/charts/mood";
+import SleepChart from "@/components/charts/sleep";
 
 
 function Page() {
-  const { data: session, isPending } = useSession();
   const queryClient = useQueryClient();
-
-  // Example optimistic mutation for adding a sleep entry
   const addEntryMutation = useMutation({
     mutationFn: async (newEntry: { date: string; sleepDuration: number }) => {
       const response = await fetch('/api/sleep', {
@@ -252,9 +52,7 @@ function Page() {
 
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
 
-  // Use React Query cache for instant navigation and offline support
-  // Only fetch once unless data is stale (5 min), cache stays for 30 min
-  // No refetch on window focus
+  
   const { data: chartsData, isLoading, isError, error } = useQuery<ChartsDataResponse>({
     queryKey: ['allChartsData', period],
     queryFn: async () => {
@@ -279,7 +77,7 @@ function Page() {
     );
   }
 
-  // Destructure data for easier access, providing empty arrays as fallbacks
+
   const {
     moodChartData = [],
     sleepDurationChartData = [],

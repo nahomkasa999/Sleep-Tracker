@@ -49,19 +49,19 @@ export interface GetSleepInsightsParams {
 //------------The type of Data we are getting from DB----------//
 // This schema now represents the combined SleepEntry data from the DB
 const SleepEntryReceivingSchemaDB = z.object({
-    id: z.string(), // Added id for consistency, though not strictly used in charts data prep
-    userId: z.string().nullable().optional(), // Added userId for consistency
+    id: z.string(),
+    userId: z.string().nullable().optional(),
     bedtime: z.date(),
     wakeUpTime: z.date(),
     qualityRating: z.number().int().min(1).max(10),
     createdAt: z.date(),
-    entryDate: z.date(), // Added from WellbeingEntry
-    dayRating: z.number().min(1).max(10).int(), // Added from WellbeingEntry
-    mood: z.enum(['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired']).nullable().optional(), // Added from WellbeingEntry
-    sleepcomments: z.string().nullable().optional(), // Corrected field name
-    daycomments: z.string().nullable().optional(), // Added from WellbeingEntry
-    durationHours: z.number().nullable().optional(), // Ensure durationHours is included in the schema
-    updatedAt: z.date(), // Added updatedAt for consistency
+    entryDate: z.date(),
+    dayRating: z.number().min(1).max(10).int(),
+    mood: z.enum(['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired']).nullable().optional(),
+    sleepcomments: z.string().nullable().optional(), 
+    daycomments: z.string().nullable().optional(),
+    durationHours: z.number().nullable().optional(),
+    updatedAt: z.date(), 
 })
 
 const SleepEntryReceivingSchemaDBArray = z.array(SleepEntryReceivingSchemaDB)
@@ -74,23 +74,23 @@ insightsRouter.get("/correlation", async(c) => {
     try {
         const CurrentUserID = c.get("user")!.id;
 
-        // Now fetching all relevant data from SleepEntry only
+        
         const sleepEntries = await db.sleepEntry.findMany({
             where: { userId: CurrentUserID },
             select: {
-                id: true, // Include id
-                userId: true, // Include userId
+                id: true, 
+                userId: true,
                 bedtime: true,
                 wakeUpTime: true,
                 qualityRating: true,
                 createdAt: true,
-                entryDate: true, // Include for correlation
-                dayRating: true, // Include for correlation
+                entryDate: true, 
+                dayRating: true, 
                 mood: true,
                 sleepcomments: true,
                 daycomments: true,
-                durationHours: true, // Include durationHours here
-                updatedAt: true, // Include updatedAt
+                durationHours: true,
+                updatedAt: true,
             }
         });
 
@@ -106,24 +106,24 @@ insightsRouter.get("/correlation", async(c) => {
 })
 
 //------------Schema for Summary Query Parameters----------//
-const SummaryQueryParamsSchema = z.object({
-    period: z.enum(['week', 'month', 'all']).optional(), 
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),  
-}).refine(data => {
-    
-    if ((data.startDate && !data.endDate) || (!data.startDate && data.endDate)) {
-        return false;
-    }
+    const SummaryQueryParamsSchema = z.object({
+        period: z.enum(['week', 'month', 'all']).optional(),  //I use this
+        startDate: z.string().datetime().optional(),
+        endDate: z.string().datetime().optional(),  
+    }).refine(data => {
+        
+        if ((data.startDate && !data.endDate) || (!data.startDate && data.endDate)) {
+            return false;
+        }
 
-    if (data.startDate && data.endDate) {
-        return new Date(data.startDate) <= new Date(data.endDate);
-    }
-    return true;
-}, {
-    message: "Both startDate and endDate must be provided if either is used, and startDate must be before or equal to endDate.",
-    path: ["startDate", "endDate"],
-});
+        if (data.startDate && data.endDate) {
+            return new Date(data.startDate) <= new Date(data.endDate);
+        }
+        return true;
+    }, {
+        message: "Both startDate and endDate must be provided if either is used, and startDate must be before or equal to endDate.",
+        path: ["startDate", "endDate"],
+    });
 
 //------------Schema for Summary Response----------//
 const SummaryResponseSchema = z.object({
@@ -136,7 +136,7 @@ const SummaryResponseSchema = z.object({
         date: z.string(),
         qualityRating: z.number()
     })),
-    averageDayRating: z.number().nullable(), // Renamed
+    averageDayRating: z.number().nullable(),
 });
 
 //------------GET /insights/summary Route----------//
@@ -173,28 +173,27 @@ insightsRouter.get("/summary", async(c) => {
             filterEndDate = new Date(endDate);
         }
 
-        // Fetching all relevant data from SleepEntry
         const sleepEntriesQuery: any = {
             where: { userId: CurrentUserID },
             select: {
-                id: true, // Include id
-                userId: true, // Include userId
+                id: true, 
+                userId: true,
                 bedtime: true,
                 wakeUpTime: true,
                 qualityRating: true,
                 createdAt: true,
-                entryDate: true, // Include entryDate for filtering and day rating calculation
-                dayRating: true, // Include dayRating for average calculation
-                durationHours: true, // Include durationHours here
-                mood: true, // Include mood for consistency
-                sleepcomments: true, // Include sleepcomments for consistency
-                daycomments: true, // Include daycomments for consistency
-                updatedAt: true, // Include updatedAt
+                entryDate: true, 
+                dayRating: true,
+                durationHours: true, 
+                mood: true,
+                sleepcomments: true,
+                daycomments: true,
+                updatedAt: true,
             }
         };
 
         if (filterStartDate && filterEndDate) {
-            sleepEntriesQuery.where.entryDate = { // Filter by entryDate for consistency
+            sleepEntriesQuery.where.entryDate = { 
                 gte: filterStartDate,
                 lte: filterEndDate,
             };
@@ -213,9 +212,9 @@ insightsRouter.get("/summary", async(c) => {
 
         if (validatedCombinedEntries.length > 0) {
             validatedCombinedEntries.forEach(entry => {
-                // Use durationHours if available, otherwise calculate
+                
                 let durationMs = (entry.durationHours !== null && entry.durationHours !== undefined)
-                    ? entry.durationHours * 60 * 60 * 1000 // Convert hours to milliseconds
+                    ? entry.durationHours * 60 * 60 * 1000 
                     : entry.wakeUpTime.getTime() - entry.bedtime.getTime();
              
                 if (durationMs < 0) {
@@ -298,8 +297,8 @@ insightsRouter.get("/AI/correlation", async (c) => {
                 entryDate: startDate ? { gte: startDate } : undefined // Filter by entryDate
             },
             select: {
-                id: true, // Include id
-                userId: true, // Include userId
+                id: true,
+                userId: true,
                 bedtime: true,
                 wakeUpTime: true,
                 qualityRating: true,
@@ -309,12 +308,11 @@ insightsRouter.get("/AI/correlation", async (c) => {
                 mood: true,
                 sleepcomments: true,
                 daycomments: true,
-                durationHours: true, // Include durationHours here
-                updatedAt: true, // Include updatedAt
+                durationHours: true, 
+                updatedAt: true,
             }
         });
 
-        // getCorrelationInsight now only needs the combined sleep entries
         const insight = await getCorrelationInsight(sleepEntries);
         return c.json({ insight }, 200);
 
@@ -323,9 +321,7 @@ insightsRouter.get("/AI/correlation", async (c) => {
     }
 });
 
-// Removed /AI/overview route
 
-// New: Define Mood enum for mapping
 enum Mood {
   Happy = "Happy",
   Stressed = "Stressed",
@@ -344,7 +340,7 @@ const moodToValue = {
     'Sad': 1,
 };
 
-// New: Zod schemas for chart data items
+
 const MoodChartDataItemSchema = z.object({
     date: z.string(),
     moodValue: z.number(),
@@ -356,11 +352,11 @@ const SleepChartDataItemSchema = z.object({
     sleepDuration: z.number(),
 });
 
-// New: Main ChartsDataResponse schema
+
 export const ChartsDataResponseSchema = z.object({
     moodChartData: z.array(MoodChartDataItemSchema),
     sleepDurationChartData: z.array(SleepChartDataItemSchema),
-    correlationChartData: z.array(z.object({ // This matches CorrelationDataPoint from utllity
+    correlationChartData: z.array(z.object({ 
         sleepDuration: z.number(),
         dayRating: z.number(),
         date: z.string(),
@@ -371,7 +367,6 @@ export const ChartsDataResponseSchema = z.object({
 export type ChartsDataResponse = z.infer<typeof ChartsDataResponseSchema>;
 
 
-// New: GET /insights/chartsdata route
 insightsRouter.get("/chartsdata", async (c) => {
     try {
         const CurrentUserID = c.get("user")!.id;

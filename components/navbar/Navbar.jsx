@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-// import { useAddEntry } from '@/components/add-entry-dialog';
+
  import { Button } from '@/components/ui/button';
 import { usePopupContext } from "@/context/PopUpContext";
 
@@ -24,7 +24,7 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { isOpen, setIsOpen } = usePopupContext();
+  const { setIsOpen } = usePopupContext();
 
   return (
     <TooltipProvider>

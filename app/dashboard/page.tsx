@@ -31,7 +31,6 @@ import { Moon, Smile, Star } from "lucide-react";
 import { ClockFading, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { z } from "zod";
 import { toast } from "sonner";
 
 import { EditEntryDialog, formatDateTimeLocal, formatDateOnly } from "@/components/EditEntries/EditEntries";
@@ -39,7 +38,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 
 import { SleepEntryReceivingSchemaDBType, SleepInsightsResponse } from "@/app/lib/insight";
-import { CorrelationResponse } from "@/app/lib/utllity";
 import DashboardLoadingSkeleton from "@/components/skeleton/DashboardLoadingSkeleton";
 
 
@@ -66,7 +64,6 @@ export type EditEntryFormType = {
 
 function Page() {
   
-  const { data: session, isPending } = useSession();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -75,14 +72,14 @@ function Page() {
   const { data: aiCorrelationInsight, isLoading: isAICorrelationLoading, isError: isAICorrelationError } = useQuery<{ insight: string }>({
     queryKey: ['aiCorrelationInsightDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/AI/correlation?period=all`); // Fetch weekly insight for dashboard
+      const response = await fetch(`/api/insights/AI/correlation?period=all`); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch AI correlation insight');
       }
       return response.json();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, 
     refetchOnWindowFocus: false,
   });
 
@@ -90,29 +87,28 @@ function Page() {
   const { data: summaryData, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery<SleepInsightsResponse>({
     queryKey: ['summaryDataDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/insights/summary?period=all`); // Fetch weekly summary
+      const response = await fetch(`/api/insights/summary?period=all`); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch summary data');
       }
       return response.json();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, 
     refetchOnWindowFocus: false,
   });
 
-  // Fetch All Sleep Entries for the table
   const { data: allSleepEntries, isLoading: isEntriesLoading, isError: isEntriesError } = useQuery<SleepEntryReceivingSchemaDBType>({
     queryKey: ['allSleepEntriesDashboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/sleep`); // Fetch all sleep entries
+      const response = await fetch(`/api/sleep`); 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch sleep entries');
       }
-      return (await response.json()).data; // Assuming data is nested under 'data'
+      return (await response.json()).data; 
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,   
     refetchOnWindowFocus: false,
   });
 
@@ -248,7 +244,6 @@ function Page() {
     );
   }
 
-  // Prepare metrics data
   const avgSleep = summaryData?.summary?.averageSleepDurationHours !== null && summaryData?.summary?.averageSleepDurationHours !== undefined
     ? `${summaryData.summary.averageSleepDurationHours.toFixed(1)}h`
     : 'N/A';
@@ -400,7 +395,7 @@ function Page() {
                         {entry.durationHours !== null && entry.durationHours !== undefined
                           ? entry.durationHours.toFixed(1)
                           : parseFloat(((entry.wakeUpTime.getTime() - entry.bedtime.getTime()) / (1000 * 60 * 60)).toFixed(1))
-                        }h
+                        }
                       </TableCell>
                       <TableCell className="px-6 py-2">
                         <Badge variant="secondary" className="capitalize">

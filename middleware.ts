@@ -6,8 +6,9 @@ const SESSION_COOKIE_NAME = "better-auth.session_token";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  // Only protect these routes
+
   const protectedRoutes = ["/", "/dashboard", "/analytics"];
+  
   const isProtected = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
@@ -26,7 +27,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Authenticated, allow access
   return NextResponse.next();
 }
 

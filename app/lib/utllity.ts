@@ -51,6 +51,8 @@ const correlationResponseSchema = z.object({
 export type CorrelationResponse = z.infer<typeof correlationResponseSchema>;
 export type CorrelationDataPoint = z.infer<typeof correlationDataPointSchema>;
 
+//e=sum(x- meanx)(y-meany)/sqrt((x-meanx)^2(y-meany)^2)
+
 function calculatePearsonCorrelation(data: CorrelationDataPoint[]): { correlationCoefficient: number; dataPoints: CorrelationDataPoint[] } {
   const filteredData = data.filter(d =>
     typeof d.sleepDuration === 'number' &&
@@ -105,7 +107,6 @@ function FindCorrelationFactor(
     const correlationInputData: CorrelationDataPoint[] = [];
 
     sleepEntries.forEach((entry) => {
-        // Prioritize durationHours if available, otherwise calculate from bedtime/wakeUpTime
         const actualSleepDuration = (entry.durationHours !== null && entry.durationHours !== undefined)
             ? entry.durationHours
             : (() => {
@@ -116,9 +117,9 @@ function FindCorrelationFactor(
                 return parseFloat((durationMs / (1000 * 60 * 60)).toFixed(2));
             })();
 
-        const dateKey = entry.entryDate.toISOString().split('T')[0]; // Use entryDate for the key
+        const dateKey = entry.entryDate.toISOString().split('T')[0];
 
-        // Ensure both sleepDuration and dayRating are present for a data point
+        
         if (actualSleepDuration !== undefined && actualSleepDuration !== null &&
             entry.dayRating !== undefined && entry.dayRating !== null) {
             correlationInputData.push({

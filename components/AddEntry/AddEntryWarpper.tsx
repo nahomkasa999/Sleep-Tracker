@@ -22,19 +22,19 @@ function CreateEntryDialogWrapper() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // --- DEBUGGING LOG: Log the full error response from the backend ---
+      
         console.error("Backend error response for /api/sleep:", errorData);
         throw new Error(errorData.message || errorData.error || 'Failed to create entry: Unknown backend error');
       }
       return response.json();
     },
     onMutate: async (newEntry) => {
-      // Optimistic update (if applicable, ensure it matches your data structure)
+      
       await queryClient.cancelQueries({ queryKey: ["allChartsData"] });
-      const period = 'week'; // Assuming 'week' is the default period for this optimistic update
+      const period = 'week'; 
       const previousData = queryClient.getQueryData(["allChartsData", period]);
 
-      // Safely update the cache for sleepDurationChartData
+     
       queryClient.setQueryData(["allChartsData", period], (old: any) => {
         if (!old) {
           return {
@@ -55,17 +55,16 @@ function CreateEntryDialogWrapper() {
       return { previousData };
     },
     onError: (error: any, variables, context) => {
-      // --- DEBUGGING LOG: Log the error caught by react-query ---
       console.error("React Query Mutation Error:", error);
       toast.error(`Failed to create entry: ${error.message || 'An unknown error occurred.'}`);
-      // Revert optimistic update if there was one
+     
       if (context?.previousData) {
         const period = 'week';
         queryClient.setQueryData(["allChartsData", period], context.previousData);
       }
     },
     onSettled: (data, error, variables, context) => {
-      // Invalidate queries regardless of success or failure to ensure fresh data
+    
       const period = 'week';
       queryClient.invalidateQueries({ queryKey: ["allChartsData", period] });
       queryClient.invalidateQueries({ queryKey: ["allSleepEntriesDashboard"] });
@@ -74,7 +73,7 @@ function CreateEntryDialogWrapper() {
     },
     onSuccess: () => {
       toast.success('Entry created successfully!');
-      setIsOpen(false); // Close the dialog on success
+      setIsOpen(false); 
     },
   });
 

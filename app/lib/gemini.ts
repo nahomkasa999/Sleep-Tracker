@@ -20,7 +20,6 @@ async function generateAndValidateInsight(
   if (rawText !== undefined) {
     return rawText.trim(); 
   } else {
-    console.error("Gemini API response was undefined or empty.");
     throw new Error("Invalid response from AI service: No text content.");
   }
 }

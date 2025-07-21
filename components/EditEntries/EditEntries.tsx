@@ -13,15 +13,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Mood options should match your backend enum
+
 const moodOptions = ['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired'];
 
-// Helper to format ISO string to YYYY-MM-DDTHH:MM for datetime-local input
+
 export const formatDateTimeLocal = (isoString: string | Date | null | undefined): string => {
   if (!isoString) return '';
   const date = new Date(isoString);
-  if (isNaN(date.getTime())) return ''; // Handle invalid dates
-
+  if (isNaN(date.getTime())) return '';
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
@@ -30,52 +29,51 @@ export const formatDateTimeLocal = (isoString: string | Date | null | undefined)
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-// Helper to format ISO string to YYYY-MM-DD for date input
+
 export const formatDateOnly = (isoString: string | Date | null | undefined): string => {
   if (!isoString) return '';
   const date = new Date(isoString);
-  if (isNaN(date.getTime())) return ''; // Handle invalid dates
+  if (isNaN(date.getTime())) return ''; 
   return date.toISOString().slice(0, 10);
 };
 
 
-// Define the schema for the form data
 const editEntrySchema = z.object({
   id: z.string(),
   entryDate: z.string().min(1, "Entry date is required"),
   bedtime: z.string().min(1, "Bedtime is required"),
   wakeUpTime: z.string().min(1, "Wake up time is required"),
   qualityRating: z.number().min(1).max(10, "Quality rating must be between 1 and 10"),
-  sleepComments: z.string().nullable().optional(), // Matches backend 'sleepcomments'
+  sleepComments: z.string().nullable().optional(), 
   durationHours: z.number().nullable().optional(),
   dayRating: z.number().min(1).max(10, "Day rating must be between 1 and 10"),
   mood: z.enum(['Happy', 'Stressed', 'Neutral', 'Sad', 'Excited', 'Tired']).nullable().optional(),
-  dayComments: z.string().nullable().optional(), // Matches backend 'daycomments' 
+  dayComments: z.string().nullable().optional(), 
 });
 
 export type EditEntryForm = z.infer<typeof editEntrySchema>;
 
 type EditEntryDialogProps = {
-  entry: EditEntryForm; // The original entry data passed from the parent
+  entry: EditEntryForm; 
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: (data: Partial<EditEntryForm>) => Promise<void>; // onSave now expects Partial<EditEntryForm>
 };
 
 export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEntryDialogProps) {
-  // Store original entry data for comparison
+ 
   const originalEntry = { ...entry };
 
   const { control, handleSubmit, watch, setValue, reset, formState: { isSubmitting, errors } } = useForm<EditEntryForm>({
     resolver: zodResolver(editEntrySchema),
     defaultValues: {
       ...entry,
-      entryDate: formatDateOnly(entry.entryDate), // Format for date input
-      bedtime: formatDateTimeLocal(entry.bedtime), // Format for datetime-local
-      wakeUpTime: formatDateTimeLocal(entry.wakeUpTime), // Format for datetime-local
-      sleepComments: entry.sleepComments ?? '', // Ensure empty string for controlled input
-      dayComments: entry.dayComments ?? '', // Ensure empty string for controlled input
-      mood: entry.mood ?? 'Neutral', // Default mood if null/undefined
+      entryDate: formatDateOnly(entry.entryDate),
+      bedtime: formatDateTimeLocal(entry.bedtime),
+      wakeUpTime: formatDateTimeLocal(entry.wakeUpTime),
+      sleepComments: entry.sleepComments ?? '',
+      dayComments: entry.dayComments ?? '',
+      mood: entry.mood ?? 'Neutral', 
     },
   });
 
@@ -85,18 +83,18 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
   const watchedQualityRating = watch('qualityRating');
   const watchedDuration = watch('durationHours');
 
-  // Calculate duration on time change
+
   useEffect(() => {
     if (watchedBedtime && watchedWakeUpTime) {
       const bed = new Date(watchedBedtime);
       const wake = new Date(watchedWakeUpTime);
       let diffMs = wake.getTime() - bed.getTime();
-      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // Add 24 hours if wakeUpTime is on next day
+      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
       setValue('durationHours', parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
     }
   }, [watchedBedtime, watchedWakeUpTime, setValue]);
 
-  // Reset form when dialog opens or entry changes
+
   useEffect(() => {
     if (isOpen) {
       reset({
@@ -113,10 +111,9 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
 
   const onSubmit = async (data: EditEntryForm) => {
-    const changedFields: Partial<EditEntryForm> = { id: data.id }; // Always include ID
+    const changedFields: Partial<EditEntryForm> = { id: data.id }; 
 
-    // Compare each field to original and add to changedFields if different
-    // Special handling for dates as they are converted for input fields
+    
     if (formatDateOnly(originalEntry.entryDate) !== data.entryDate) {
       changedFields.entryDate = new Date(data.entryDate).toISOString();
     }
@@ -127,11 +124,11 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
       changedFields.wakeUpTime = new Date(data.wakeUpTime).toISOString();
     }
 
-    // Compare other fields directly
+    
     if (originalEntry.qualityRating !== data.qualityRating) {
       changedFields.qualityRating = data.qualityRating;
     }
-    // Handle comments: empty string from form should map to null for backend if original was null/undefined
+  
     if ((originalEntry.sleepComments ?? '') !== (data.sleepComments ?? '')) {
       changedFields.sleepComments = data.sleepComments === '' ? null : data.sleepComments;
     }
@@ -139,9 +136,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
       changedFields.dayComments = data.dayComments === '' ? null : data.dayComments;
     }
 
-    // DurationHours is calculated, so it should always be sent if bedtime/wakeUpTime changed or if it was manually edited
-    // The backend will handle its calculation logic based on bedtime/wakeUpTime if durationHours is not provided
-    // For partial update, we only send if it was explicitly changed or if its source (bedtime/wakeUpTime) changed
+
     if (originalEntry.durationHours !== data.durationHours && data.durationHours !== undefined) {
       changedFields.durationHours = data.durationHours;
     }
@@ -149,17 +144,17 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
     if (originalEntry.dayRating !== data.dayRating) {
       changedFields.dayRating = data.dayRating;
     }
-    if ((originalEntry.mood ?? 'Neutral') !== (data.mood ?? 'Neutral')) { // Compare with default 'Neutral'
-      changedFields.mood = data.mood === 'Neutral' ? null : data.mood; // Send null if set to Neutral, otherwise the mood
+    if ((originalEntry.mood ?? 'Neutral') !== (data.mood ?? 'Neutral')) { 
+      changedFields.mood = data.mood === 'Neutral' ? null : data.mood; 
     }
 
-    // Remove the 'id' field from the partial update object as it's part of the URL
+    
     const { id, ...payload } = changedFields;
     
-    if (Object.keys(payload).length > 0) { // Only send if there are actual changes
-      await onSave({ id, ...payload }); // Pass id separately to onSave
+    if (Object.keys(payload).length > 0) { 
+      await onSave({ id, ...payload });
     } else {
-      onOpenChange(false); // No changes, just close
+      onOpenChange(false);
     }
   };
 
@@ -186,7 +181,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
                     id="entryDate"
                     type="date"
                     {...field}
-                    value={field.value} // Value is already formatted by defaultValues/reset
+                    value={field.value} 
                     className="bg-card text-foreground border-border rounded-md focus:ring-primary focus:border-primary"
                   />
                 )}
