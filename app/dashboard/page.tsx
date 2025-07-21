@@ -258,7 +258,30 @@ function Page() {
     : 'N/A';
 
   
-  const avgMood = "N/A"; 
+  const calculateMostFrequentMood = (entries: JournalEntry[]): string => {
+    if (!entries || entries.length === 0) {
+      return "N/A";
+    }
+
+    const moodCounts = entries.reduce((acc, entry) => {
+      if (entry.mood) {
+        acc[entry.mood] = (acc[entry.mood] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    if (Object.keys(moodCounts).length === 0) {
+      return "N/A";
+    }
+
+    const mostFrequentMood = Object.keys(moodCounts).reduce((a, b) =>
+      moodCounts[a] > moodCounts[b] ? a : b
+    );
+
+    return mostFrequentMood;
+  };
+
+  const avgMood = calculateMostFrequentMood(entries);
 
   const dashboardMetrics = [
     {
@@ -295,7 +318,7 @@ function Page() {
           <AlertTitle className="font-bold text-foreground text-sm md:text-base">
             This Week's Insight
           </AlertTitle>
-          <AlertDescription className="text-xs md:text-sm text-foreground">
+          <AlertDescription className="text-2xs md:text-sm text-foreground">
             {aiCorrelationInsight?.insight || "Loading AI insight..."}
           </AlertDescription>
         </div>

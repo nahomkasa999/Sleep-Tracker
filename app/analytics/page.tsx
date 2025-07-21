@@ -117,7 +117,7 @@ const SleepChart = ({ entries }: SleepChartProps) => {
     <Card className="border-2 border-border">
       <CardHeader>
         <CardTitle className="text-3xl text-foreground">Sleep Duration</CardTitle>
-        <CardDescription>Your sleep duration for the last 7 days.</CardDescription>
+        <CardDescription>Your sleep durations.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={sleepChartConfig} className="h-[250px] w-full">
@@ -300,7 +300,7 @@ function Page() {
             <h1 className="font-header text-4xl font-bold text-foreground ">
               Analytics
             </h1>
-            <p className="text-lg font-sans sm:text-base md:text-lg lg:text-md text-muted-foreground">
+            <p className="text-xs font-sans sm:text-base md:text-lg lg:text-md text-muted-foreground">
               Visualizing your sleep patterns, mood trends, and correlations.
             </p>
           </div>
@@ -333,7 +333,7 @@ function Page() {
           <AlertTitle className="font-bold text-foreground text-base md:text-lg">
             Correlation Insight
           </AlertTitle>
-          <AlertDescription className="text-xs md:text-sm lg:text-md text-foreground">
+          <AlertDescription className="text-2xs md:text-sm lg:text-md text-foreground">
             {aiCorrelationInsight}
           </AlertDescription>
         </div>

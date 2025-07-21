@@ -36,14 +36,6 @@ export default function HomePage() {
           <div className="text-muted-foreground text-sm">{session.user?.email}</div>
         </CardContent>
         <CardFooter className="flex flex-col items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Sun className="h-[1.2rem] w-[1.2rem]" />
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-            />
-            <Moon className="h-[1.2rem] w-[1.2rem]" />
-          </div>
           <Button
             variant="destructive"
             className="w-full max-w-xs"
