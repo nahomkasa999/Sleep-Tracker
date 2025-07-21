@@ -39,7 +39,7 @@ model SleepEntry {
   wakeUpTime      DateTime
   durationHours   Float     // Store duration in hours for easier charting
   qualityRating   Int       @map("sleep_quality_rating") @default(5) @db.SmallInt // 1-10
-  entryDate       DateTime  @unique @default(now()) 
+  entryDate       DateTime  @default(now()) 
   dayRating       Int       @map("day_rating") @default(5) @db.SmallInt // 1-10
   mood            Mood?     
   sleepcomments   String?

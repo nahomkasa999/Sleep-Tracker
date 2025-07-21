@@ -3,16 +3,19 @@
 import { redirect } from "next/navigation";
 import { authClient } from "./lib/auth-client";
 import { useSession } from "./lib/auth-client";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
+import { User, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() { 
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
-  if (isPending === true) {
+  if (isPending) {
     return <div>Loading...</div>;
   }
 
@@ -32,7 +35,15 @@ export default function HomePage() {
           <div className="text-lg font-semibold">{session.user?.name || "No Name"}</div>
           <div className="text-muted-foreground text-sm">{session.user?.email}</div>
         </CardContent>
-        <CardFooter className="flex flex-col items-center gap-2">
+        <CardFooter className="flex flex-col items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Sun className="h-[1.2rem] w-[1.2rem]" />
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+            />
+            <Moon className="h-[1.2rem] w-[1.2rem]" />
+          </div>
           <Button
             variant="destructive"
             className="w-full max-w-xs"

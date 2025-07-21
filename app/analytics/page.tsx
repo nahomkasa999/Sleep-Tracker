@@ -64,7 +64,7 @@ const MoodChart = ({ entries }: MoodChartProps) => {
   return (
     <Card className="border-2 border-border">
       <CardHeader>
-        <CardTitle className="text-3xl text-white">Mood Trend</CardTitle>
+        <CardTitle className="text-3xl text-foreground">Mood Trend</CardTitle>
         <CardDescription>Your mood rating for the last 7 days.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -116,7 +116,7 @@ const SleepChart = ({ entries }: SleepChartProps) => {
   return (
     <Card className="border-2 border-border">
       <CardHeader>
-        <CardTitle className="text-3xl text-white">Sleep Duration</CardTitle>
+        <CardTitle className="text-3xl text-foreground">Sleep Duration</CardTitle>
         <CardDescription>Your sleep duration for the last 7 days.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -164,7 +164,7 @@ const CorrelationChart = ({ entries }: CorrelationChartProps) => {
   return (
     <Card className="border-2 border-border">
       <CardHeader>
-        <CardTitle className="text-3xl text-white">Sleep & Day Rating Correlation</CardTitle>
+        <CardTitle className="text-3xl text-foreground">Sleep & Day Rating Correlation</CardTitle>
         <CardDescription>
           Does more sleep lead to a better day?
         </CardDescription>
@@ -297,7 +297,7 @@ function Page() {
       <div className="grid gap-0 grid-cols-1">
         <div className="col-span-6 flex items-center justify-between">
           <div>
-            <h1 className="font-header text-4xl font-bold text-white ">
+            <h1 className="font-header text-4xl font-bold text-foreground ">
               Analytics
             </h1>
             <p className="text-lg font-sans sm:text-base md:text-lg lg:text-md text-muted-foreground">
@@ -330,7 +330,7 @@ function Page() {
       <Alert className="flex flex-col space-y-3 p-4 w-full border-2 border-border text-xs md:text-sm lg:text-base">
         <ClockFading />
         <div className="space-y-1">
-          <AlertTitle className="font-bold text-white text-base md:text-lg">
+          <AlertTitle className="font-bold text-foreground text-base md:text-lg">
             Correlation Insight
           </AlertTitle>
           <AlertDescription className="text-xs md:text-sm lg:text-md text-foreground">

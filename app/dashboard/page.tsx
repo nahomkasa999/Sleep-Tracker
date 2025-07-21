@@ -283,7 +283,7 @@ function Page() {
     <div className="space-y-5 flex flex-col justify-center p-4">
       {/* header */}
       <div>
-        <h1 className="font-header text-3xl font-bold text-white">Dashboard</h1>
+        <h1 className="font-header text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-xs md:text-sm text-muted-foreground">
           An overview of your sleep and wellbeing.
         </p>
@@ -292,7 +292,7 @@ function Page() {
       <Alert className="flex flex-col space-y-3 p-4 w-full border-2 border-border">
         <ClockFading />
         <div className="space-y-1">
-          <AlertTitle className="font-bold text-white text-sm md:text-base">
+          <AlertTitle className="font-bold text-foreground text-sm md:text-base">
             This Week's Insight
           </AlertTitle>
           <AlertDescription className="text-xs md:text-sm text-foreground">

@@ -8,10 +8,7 @@ export default function NavbarWrapper() {
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
 
-  console.log("session", session);
-  console.log("isPending", isPending);
-
-  //Only show on these routes and if authenticated
+  // Show navbar if session is loading or authenticated, and on the correct routes
   const showNavbar =
     (
       pathname === "/" ||

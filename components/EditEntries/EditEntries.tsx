@@ -165,11 +165,10 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* Added max-h-screen and overflow-y-auto for responsiveness */}
-      <DialogContent className="sm:max-w-[500px] md:max-w-[600px] max-h-screen overflow-y-auto border-2 border-border bg-background text-foreground rounded-lg shadow-xl p-6">
+      <DialogContent className="sm:max-w-[500px] md:max-w-[600px] h-[70vh] sm:h-auto overflow-y-auto border-2 border-border bg-background text-foreground rounded-lg shadow-xl p-6">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader className="mb-6">
-            <DialogTitle className="text-3xl font-bold text-white">Edit Entry</DialogTitle>
+            <DialogTitle className="text-3xl font-bold text-foreground">Edit Entry</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
               Adjust your sleep and well-being details for {new Date(entry.entryDate).toLocaleDateString()}.
             </DialogDescription>
@@ -178,7 +177,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
           <div className="grid gap-6 py-4">
             {/* Date */}
             <div className="space-y-2">
-              <Label htmlFor="entryDate" className="text-white">Date</Label>
+              <Label htmlFor="entryDate" className="text-foreground">Date</Label>
               <Controller
                 name="entryDate"
                 control={control}
@@ -197,7 +196,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
             {/* Bedtime & WakeUpTime */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="bedtime" className="text-white">Went to Sleep</Label>
+                <Label htmlFor="bedtime" className="text-foreground">Went to Sleep</Label>
                 <Controller
                   name="bedtime"
                   control={control}
@@ -213,7 +212,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="wakeUpTime" className="text-white">Woke Up</Label>
+                <Label htmlFor="wakeUpTime" className="text-foreground">Woke Up</Label>
                 <Controller
                   name="wakeUpTime"
                   control={control}
@@ -232,14 +231,14 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
             {/* Sleep Duration */}
             <div className="flex items-center justify-between text-sm text-muted-foreground bg-card p-3 rounded-md border border-border">
-              <Label className="text-white">Calculated Sleep Duration:</Label>
+              <Label className="text-foreground">Calculated Sleep Duration:</Label>
               <span className="font-semibold text-primary">{watchedDuration ? watchedDuration.toFixed(2) : '--'} hours</span>
             </div>
 
             {/* Sleep Quality */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-white">Sleep Quality</Label>
+                <Label className="text-foreground">Sleep Quality</Label>
                 <span className="text-sm text-muted-foreground">{watchedQualityRating}/10</span>
               </div>
               <Controller
@@ -260,7 +259,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
             {/* Sleep Comments */}
             <div className="space-y-2">
-              <Label htmlFor="sleepComments" className="text-white">Sleep Notes</Label>
+              <Label htmlFor="sleepComments" className="text-foreground">Sleep Notes</Label>
               <Controller
                 name="sleepComments"
                 control={control}
@@ -278,7 +277,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
             {/* Mood */}
             <div className="space-y-2 w-full">
-              <Label htmlFor="mood" className="text-white">Mood</Label>
+              <Label htmlFor="mood" className="text-foreground">Mood</Label>
               <Controller
                 name="mood"
                 control={control}
@@ -302,7 +301,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
             {/* Day Rating */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-white">Day Rating</Label>
+                <Label className="text-foreground">Day Rating</Label>
                 <span className="text-sm text-muted-foreground">{watchedDayRating}/10</span>
               </div>
               <Controller
@@ -324,7 +323,7 @@ export function EditEntryDialog({ entry, isOpen, onOpenChange, onSave }: EditEnt
 
             {/* Day Comments */}
             <div className="space-y-2">
-              <Label htmlFor="dayComments" className="text-white">Day Notes</Label>
+              <Label htmlFor="dayComments" className="text-foreground">Day Notes</Label>
               <Controller
                 name="dayComments"
                 control={control}

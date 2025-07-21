@@ -18,7 +18,6 @@ export function middleware(request: NextRequest) {
 
   
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
-  console.log("Session cookie:", request.cookies.getAll());
   if (!sessionCookie) {
     
     const url = request.nextUrl.clone();

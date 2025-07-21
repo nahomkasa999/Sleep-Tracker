@@ -7254,7 +7254,6 @@ export namespace Prisma {
 
   export type SleepEntryWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    entryDate?: Date | string
     AND?: SleepEntryWhereInput | SleepEntryWhereInput[]
     OR?: SleepEntryWhereInput[]
     NOT?: SleepEntryWhereInput | SleepEntryWhereInput[]
@@ -7263,6 +7262,7 @@ export namespace Prisma {
     wakeUpTime?: DateTimeFilter<"SleepEntry"> | Date | string
     durationHours?: FloatFilter<"SleepEntry"> | number
     qualityRating?: IntFilter<"SleepEntry"> | number
+    entryDate?: DateTimeFilter<"SleepEntry"> | Date | string
     dayRating?: IntFilter<"SleepEntry"> | number
     mood?: EnumMoodNullableFilter<"SleepEntry"> | $Enums.Mood | null
     sleepcomments?: StringNullableFilter<"SleepEntry"> | string | null
@@ -7270,7 +7270,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"SleepEntry"> | Date | string
     updatedAt?: DateTimeFilter<"SleepEntry"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
-  }, "id" | "entryDate">
+  }, "id">
 
   export type SleepEntryOrderByWithAggregationInput = {
     id?: SortOrder

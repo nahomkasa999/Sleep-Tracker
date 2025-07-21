@@ -13,9 +13,7 @@ function CreateEntryDialogWrapper() {
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: CreateEntryForm) => {
-      // --- DEBUGGING LOG: Log the data being sent to the backend ---
-      console.log("Payload being sent to /api/sleep:", JSON.stringify(data, null, 2));
-
+      
       const response = await fetch('/api/sleep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
