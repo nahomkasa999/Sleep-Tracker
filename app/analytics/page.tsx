@@ -15,6 +15,8 @@ import SleepChart from "@/components/charts/sleep";
 
 function Page() {
   const queryClient = useQueryClient();
+
+
   const addEntryMutation = useMutation({
     mutationFn: async (newEntry: { date: string; sleepDuration: number }) => {
       const response = await fetch('/api/sleep', {
@@ -90,8 +92,8 @@ function Page() {
   }
 
   return (
-    <div className="space-y-5 flex flex-col justify-center p-4 relative min-h-screen"> {/* Added relative and min-h-screen */}
-      {/* Removed the Add Sleep Entry (Optimistic Demo) button */}
+    <div className="space-y-5 flex flex-col justify-center p-4 relative min-h-screen"> 
+      
       <div className="grid gap-0 grid-cols-1">
         <div className="col-span-6 flex items-center justify-between">
           <div>
@@ -102,6 +104,7 @@ function Page() {
               Visualizing your sleep patterns, mood trends, and correlations.
             </p>
           </div>
+
           {/* Period Switcher */}
           <div className="flex gap-2">
             <button

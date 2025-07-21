@@ -257,7 +257,7 @@ insightsRouter.get("/summary", async(c) => {
             averageSleepDurationHours: averageSleepDurationHours,
             bestSleepDays: bestSleepDays,
             worstSleepDays: worstSleepDays,
-            averageDayRating: averageDayRating, // Renamed
+            averageDayRating: averageDayRating,
         };
 
         const validatedSummaryResponse = SummaryResponseSchema.safeParse(summaryResponse);
@@ -290,7 +290,7 @@ insightsRouter.get("/AI/correlation", async (c) => {
             startDate = subDays(new Date(), 30);
         }
 
-        // Fetching combined sleep and wellbeing data
+       
         const sleepEntries = await db.sleepEntry.findMany({
             where: { 
                 userId: CurrentUserID,

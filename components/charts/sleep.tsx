@@ -1,14 +1,9 @@
 "use client"
 import React from "react";
-import { ClockFading, FileText } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TrendingUp } from "lucide-react"
-import { useSession } from "@/app/lib/auth-client";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
