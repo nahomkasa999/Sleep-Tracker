@@ -88,19 +88,18 @@ export function CreateEntryDialog({ isOpen, onOpenChange, onSave }: CreateEntryD
   }, [isOpen, reset]);
 
   const onSubmit = async (data: CreateEntryForm) => {
+    // Ensure mood is always a valid value (never null)
+    const moodValue = data.mood && data.mood !== 'Neutral' ? data.mood : 'Neutral';
     // Convert date strings back to ISO format for backend
     const payload = {
       ...data,
       bedtime: new Date(data.bedtime).toISOString(),
       wakeUpTime: new Date(data.wakeUpTime).toISOString(),
       entryDate: new Date(data.entryDate).toISOString(),
-      // Ensure comments are null if empty string
-      sleepcomments: data.sleepcomments === '' ? null : data.sleepcomments,
-      daycomments: data.daycomments === '' ? null : data.daycomments,
-      // Ensure mood is null if 'Neutral' (or other default you choose to represent null)
-      mood: data.mood === 'Neutral' ? null : data.mood,
+      sleepcomments: data.sleepcomments === '' ? undefined : data.sleepcomments,
+      daycomments: data.daycomments === '' ? undefined : data.daycomments,
+      mood: moodValue,
     };
-    console.log(payload)
     await onSave(payload);
     onOpenChange(false);
   };
